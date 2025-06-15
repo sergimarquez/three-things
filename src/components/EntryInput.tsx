@@ -62,7 +62,7 @@ export default function EntryInput() {
         </button>
       )}
       {hasTodayEntry() && (
-        <p className="text-green-600 font-medium">✅ You've already submitted today's entry</p>
+        <p className="text-green-600 font-medium">🎉 Today's gratitude captured! Come back tomorrow for a fresh start.</p>
       )}
     </div>
   );

@@ -9,7 +9,7 @@ export default function Layout({ children }: LayoutProps) {
 
   const navItems = [
     { path: '/', label: 'Home' },
-    { path: '/archive', label: 'Archive' },
+    { path: '/archive', label: 'Journal' },
     { path: '/streak', label: 'Streak' },
     { path: '/review', label: 'Review' },
     { path: '/export', label: 'Export' },

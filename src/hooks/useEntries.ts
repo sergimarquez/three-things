@@ -7,6 +7,7 @@ export type EntryItem = {
 };
 
 export type Entry = {
+  id: string;
   date: string;
   time: string;
   items: [EntryItem, EntryItem, EntryItem];
@@ -22,15 +23,41 @@ export function useEntries() {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
-        setEntries(JSON.parse(stored));
+        const parsedEntries = JSON.parse(stored);
+        // Add IDs to old entries that don't have them
+        const entriesWithIds = parsedEntries.map((entry: any) => ({
+          ...entry,
+          id: entry.id || `${entry.date}-${entry.time}`,
+        }));
+        setEntries(entriesWithIds);
       } catch (error) {
         console.error("Failed to parse entries from localStorage:", error);
       }
     }
   }, []);
 
-  const saveEntry = (entry: Entry) => {
-    const updatedEntries = [entry, ...entries];
+  const saveEntry = (entry: Omit<Entry, 'id'>) => {
+    const newEntry = {
+      ...entry,
+      id: `${entry.date}-${entry.time}`,
+    };
+    const updatedEntries = [newEntry, ...entries];
+    setEntries(updatedEntries);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedEntries));
+  };
+
+  const updateEntry = (id: string, updatedEntry: Omit<Entry, 'id'>) => {
+    const updatedEntries = entries.map(entry => 
+      entry.id === id 
+        ? { ...updatedEntry, id }
+        : entry
+    );
+    setEntries(updatedEntries);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedEntries));
+  };
+
+  const deleteEntry = (id: string) => {
+    const updatedEntries = entries.filter(entry => entry.id !== id);
     setEntries(updatedEntries);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedEntries));
   };
@@ -48,6 +75,8 @@ export function useEntries() {
   return {
     entries,
     saveEntry,
+    updateEntry,
+    deleteEntry,
     hasTodayEntry,
     getTodayEntry,
   };
