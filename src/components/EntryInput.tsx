@@ -1,42 +1,35 @@
 import { useState } from "react";
 import { format } from "date-fns";
-
-type EntryItem = {
-  text: string;
-  favorite?: boolean;
-};
+import { useEntries, EntryItem } from "../hooks/useEntries";
 
 export default function EntryInput() {
+  const { saveEntry, hasTodayEntry } = useEntries();
   const [items, setItems] = useState<EntryItem[]>([
     { text: "" },
     { text: "" },
     { text: "" },
   ]);
 
-  const handleChange = (index: number, value: string) => {
+  const handleChange = (i: number, val: string) => {
     const updated = [...items];
-    updated[index].text = value;
+    updated[i].text = val;
     setItems(updated);
   };
 
-  const toggleFavorite = (index: number) => {
+  const toggleFavorite = (i: number) => {
     const updated = [...items];
-    updated[index].favorite = !updated[index].favorite;
+    updated[i].favorite = !updated[i].favorite;
     setItems(updated);
   };
 
   const handleSubmit = () => {
-    const entry = {
-      date: format(new Date(), "yyyy-MM-dd"),
-      time: format(new Date(), "HH:mm"),
-      items,
-    };
-
-    const existing = JSON.parse(localStorage.getItem("three-things-entries") || "[]");
-    localStorage.setItem("three-things-entries", JSON.stringify([entry, ...existing]));
-
+    const now = new Date();
+    saveEntry({
+      date: format(now, "yyyy-MM-dd"),
+      time: format(now, "HH:mm"),
+      items: items as [EntryItem, EntryItem, EntryItem],
+    });
     setItems([{ text: "" }, { text: "" }, { text: "" }]);
-    // optionally lock here
   };
 
   return (
@@ -59,12 +52,17 @@ export default function EntryInput() {
           />
         </div>
       ))}
-      <button
-        onClick={handleSubmit}
-        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-      >
-        Save Today's 3 Things
-      </button>
+      {!hasTodayEntry() && (
+        <button
+          onClick={handleSubmit}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Save Today’s 3 Things
+        </button>
+      )}
+      {hasTodayEntry() && (
+        <p className="text-green-600 font-medium">✅ You've already submitted today’s entry</p>
+      )}
     </div>
   );
 }
