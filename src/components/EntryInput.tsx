@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { useEntries, EntryItem } from "../hooks/useEntries";
+import { useEntries } from "../hooks/useEntries";
+import type { EntryItem } from "../hooks/useEntries";
 
 export default function EntryInput() {
   const { saveEntry, hasTodayEntry } = useEntries();
@@ -57,11 +58,11 @@ export default function EntryInput() {
           onClick={handleSubmit}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
-          Save Today’s 3 Things
+          Save Today's 3 Things
         </button>
       )}
       {hasTodayEntry() && (
-        <p className="text-green-600 font-medium">✅ You've already submitted today’s entry</p>
+        <p className="text-green-600 font-medium">✅ You've already submitted today's entry</p>
       )}
     </div>
   );
