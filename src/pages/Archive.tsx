@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { format, parseISO, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { useEntries } from "../hooks/useEntries";
 import type { EntryItem } from "../hooks/useEntries";
+import { Search, Star, Edit3, Trash2, Filter, X, Plus } from "lucide-react";
 
 export default function Archive() {
   const { entries, updateEntry, deleteEntry, addFakeData } = useEntries();
@@ -17,19 +18,11 @@ export default function Archive() {
 
   const formatDisplayDate = (dateStr: string, timeStr: string) => {
     const date = parseISO(dateStr);
-    return `${format(date, 'd MMMM yyyy')} at ${timeStr}`;
+    return `${format(date, 'EEEE, MMMM d, yyyy')} at ${timeStr}`;
   };
 
   // Filtered entries
   const filteredEntries = useMemo(() => {
-    console.log("Filtering entries:", { 
-      totalEntries: entries.length, 
-      showStarredOnly, 
-      searchTerm, 
-      dateFrom, 
-      dateTo 
-    });
-    
     let result = entries.filter(entry => {
       // Search filter
       if (searchTerm) {
@@ -61,7 +54,7 @@ export default function Archive() {
       result = result.map(entry => ({
         ...entry,
         items: entry.items.filter(item => item.favorite === true) as [EntryItem, EntryItem, EntryItem]
-      })).filter(entry => entry.items.length > 0); // Remove entries with no starred items
+      })).filter(entry => entry.items.length > 0);
     }
 
     return result;
@@ -74,21 +67,30 @@ export default function Archive() {
     setDateTo("");
   };
 
+  const activeFiltersCount = [searchTerm, showStarredOnly, dateFrom, dateTo].filter(Boolean).length;
+
   if (entries.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-6">Journal</h1>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-          <p className="text-gray-600 mb-3">No entries yet. You can:</p>
-          <div className="flex gap-3">
-            <button
-              onClick={addFakeData}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Add Sample Data
-            </button>
-            <span className="text-gray-500">or go to Home to add your first entry!</span>
+      <div className="max-w-2xl mx-auto text-center">
+        <div className="bg-white border border-stone-200 rounded-2xl p-8">
+          <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-8 h-8 border-2 border-stone-300 rounded-full border-dashed"></div>
           </div>
+          
+          <h2 className="text-xl font-medium text-stone-900 mb-2">
+            Your journal is empty
+          </h2>
+          <p className="text-stone-600 mb-6">
+            Start your gratitude practice by recording your first reflection
+          </p>
+          
+          <button
+            onClick={addFakeData}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors"
+          >
+            <Plus size={16} />
+            Add Sample Entries
+          </button>
         </div>
       </div>
     );
@@ -131,211 +133,223 @@ export default function Archive() {
 
   const handleDelete = (entryId: string, date: string) => {
     const displayDate = formatDisplayDate(date, "");
-    if (window.confirm(`Are you sure you want to delete the entry from ${displayDate.replace(" at ", "")}? This action cannot be undone.`)) {
+    if (window.confirm(`Delete this reflection from ${displayDate.replace(" at ", "")}?`)) {
       deleteEntry(entryId);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Journal</h1>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
-            </svg>
-            Filters
-            {(searchTerm || showStarredOnly || dateFrom || dateTo) && (
-              <span className="bg-blue-800 text-xs px-1.5 py-0.5 rounded-full">
-                {[searchTerm, showStarredOnly, dateFrom, dateTo].filter(Boolean).length}
-              </span>
-            )}
-          </button>
-          {entries.length > 0 && (
-            <button
-              onClick={addFakeData}
-              className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
-            >
-              Add Sample Data
-            </button>
-          )}
+    <div className="max-w-3xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-medium text-stone-900">Journal</h1>
+          <p className="text-stone-600 mt-1">
+            {filteredEntries.length} {filteredEntries.length === 1 ? 'reflection' : 'reflections'}
+            {activeFiltersCount > 0 && ` (filtered)`}
+          </p>
         </div>
+        
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`
+            inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+            ${showFilters || activeFiltersCount > 0
+              ? "bg-stone-900 text-white" 
+              : "border border-stone-300 text-stone-700 hover:bg-stone-50"
+            }
+          `}
+        >
+          <Filter size={16} />
+          Filters
+          {activeFiltersCount > 0 && (
+            <span className="bg-stone-700 text-xs px-1.5 py-0.5 rounded-full">
+              {activeFiltersCount}
+            </span>
+          )}
+        </button>
       </div>
 
-      {/* Filters */}
-      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
-        showFilters ? 'max-h-96 opacity-100 mb-6' : 'max-h-0 opacity-0 mb-0'
-      }`}>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4 transform transition-transform duration-300">
-          <div className="flex flex-wrap gap-4">
+      {/* Filters Panel */}
+      {showFilters && (
+        <div className="bg-white border border-stone-200 rounded-xl p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-medium text-stone-900">Filter Reflections</h3>
+            {activeFiltersCount > 0 && (
+              <button
+                onClick={clearFilters}
+                className="text-sm text-stone-600 hover:text-stone-900 transition-colors"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Search */}
-            <div className="flex-1 min-w-64">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-stone-700 mb-2">
                 Search
               </label>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search in your entries..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
-              />
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search your reflections..."
+                  className="w-full pl-10 pr-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-transparent"
+                />
+              </div>
             </div>
 
-            {/* Date From */}
+            {/* Date Range */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-stone-700 mb-2">
                 From Date
               </label>
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-transparent"
               />
             </div>
 
-            {/* Date To */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-stone-700 mb-2">
                 To Date
               </label>
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-transparent"
               />
             </div>
-          </div>
 
-          <div className="flex items-center justify-between">
-            {/* Starred Filter */}
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={showStarredOnly}
-                onChange={(e) => setShowStarredOnly(e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition-all duration-200"
-              />
-              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors duration-200">
-                ⭐ Show only starred entries
-              </span>
-            </label>
-
-            {/* Clear Filters */}
-            {(searchTerm || showStarredOnly || dateFrom || dateTo) && (
-              <button
-                onClick={clearFilters}
-                className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200 hover:bg-blue-50 rounded"
-              >
-                Clear Filters
-              </button>
-            )}
-          </div>
-
-          {/* Results count */}
-          <div className="text-sm text-gray-600 transition-all duration-300">
-            Showing {filteredEntries.length} of {entries.length} entries
+            {/* Starred Only */}
+            <div className="md:col-span-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showStarredOnly}
+                  onChange={(e) => setShowStarredOnly(e.target.checked)}
+                  className="rounded border-stone-300 text-stone-900 focus:ring-stone-500"
+                />
+                <span className="text-sm font-medium text-stone-700">
+                  Show only starred reflections
+                </span>
+              </label>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      <div className="space-y-4">
-        {filteredEntries.map((entry, index) => (
-          <div 
-            key={entry.id} 
-            className="group bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-[1.01] animate-fadeIn"
-            style={{ animationDelay: `${index * 50}ms` }}
-          >
-            <div className="flex justify-between items-start mb-3">
-              <div className="text-sm text-gray-500 transition-colors duration-200">
-                {formatDisplayDate(entry.date, entry.time)}
+      {/* Entries */}
+      <div className="space-y-6">
+        {filteredEntries.map((entry) => (
+          <div key={entry.id} className="bg-white border border-stone-200 rounded-xl p-6">
+            {/* Entry Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-medium text-stone-900">
+                  {formatDisplayDate(entry.date, entry.time)}
+                </h3>
               </div>
               
-              {editingId !== entry.id && (
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <button
-                    onClick={() => startEditing(entry.id, entry.items)}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-all duration-200 hover:bg-blue-50 px-2 py-1 rounded"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(entry.id, entry.date)}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium transition-all duration-200 hover:bg-red-50 px-2 py-1 rounded"
-                  >
-                    Delete
-                  </button>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => startEditing(entry.id, entry.items)}
+                  className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
+                >
+                  <Edit3 size={16} />
+                </button>
+                <button
+                  onClick={() => handleDelete(entry.id, entry.date)}
+                  className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
 
-            <div className="transition-all duration-300 ease-in-out">
-              {editingId === entry.id ? (
-                // Edit mode
-                <div className="space-y-3 animate-slideIn">
-                  {editingItems.map((item, itemIndex) => (
-                    <div key={itemIndex} className="flex items-center gap-2 group">
+            {/* Entry Items */}
+            {editingId === entry.id ? (
+              <div className="space-y-4">
+                {editingItems.map((item, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-stone-700">
+                        {index + 1}.
+                      </label>
                       <button
-                        onClick={() => toggleEditFavorite(itemIndex)}
-                        className={`text-xl transition-all duration-300 transform hover:scale-125 ${
-                          item.favorite ? "text-yellow-500 drop-shadow-sm" : "text-gray-400 hover:text-yellow-400"
+                        onClick={() => toggleEditFavorite(index)}
+                        className={`p-1 rounded transition-colors ${
+                          item.favorite ? "text-amber-500" : "text-stone-300 hover:text-amber-400"
                         }`}
                       >
-                        ★
+                        <Star size={16} fill={item.favorite ? "currentColor" : "none"} />
                       </button>
-                      <input
-                        type="text"
-                        value={item.text}
-                        onChange={(e) => handleEditChange(itemIndex, e.target.value)}
-                        className="flex-1 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 focus:border-blue-500"
-                        placeholder={`Thing ${itemIndex + 1}`}
-                      />
                     </div>
-                  ))}
-                  <div className="flex gap-2 pt-2">
-                    <button
-                      onClick={() => saveEdit(entry.id, entry.date, entry.time)}
-                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-md"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={cancelEditing}
-                      className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-md"
-                    >
-                      Cancel
-                    </button>
+                    <textarea
+                      value={item.text}
+                      onChange={(e) => handleEditChange(index, e.target.value)}
+                      className="w-full p-3 border border-stone-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-transparent"
+                      rows={2}
+                    />
                   </div>
+                ))}
+                
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    onClick={() => saveEdit(entry.id, entry.date, entry.time)}
+                    className="px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={cancelEditing}
+                    className="px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors text-sm"
+                  >
+                    Cancel
+                  </button>
                 </div>
-              ) : (
-                // View mode
-                <div className="space-y-2">
-                  {entry.items.map((item, itemIndex) => (
-                    <div key={itemIndex} className="flex items-start gap-2 group hover:bg-gray-50 p-2 rounded transition-all duration-200">
-                      <span className={`text-lg transition-all duration-300 ${
-                        item.favorite ? "text-yellow-500 drop-shadow-sm" : "text-gray-300"
-                      }`}>
-                        ★
-                      </span>
-                      <span className={`text-gray-800 transition-all duration-200 ${
-                        item.favorite ? "font-semibold" : ""
-                      }`}>
-                        {item.text || `Thing ${itemIndex + 1}`}
-                      </span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {entry.items.map((item, index) => (
+                  <div
+                    key={index}
+                    className={`p-3 rounded-lg ${
+                      item.favorite ? "bg-amber-50 border border-amber-200" : "bg-stone-50"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-stone-900 flex-1">{item.text}</p>
+                      {item.favorite && (
+                        <Star size={16} className="text-amber-500 mt-0.5 flex-shrink-0" fill="currentColor" />
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
+
+      {filteredEntries.length === 0 && entries.length > 0 && (
+        <div className="text-center py-12">
+          <p className="text-stone-600 mb-4">No reflections match your current filters</p>
+          <button
+            onClick={clearFilters}
+            className="text-stone-900 hover:underline"
+          >
+            Clear filters to see all entries
+          </button>
+        </div>
+      )}
     </div>
   );
 }

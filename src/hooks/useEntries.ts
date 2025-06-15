@@ -80,23 +80,18 @@ export function useEntries() {
   // Load entries from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    console.log("Loading from localStorage:", stored);
     if (stored) {
       try {
         const parsedEntries = JSON.parse(stored);
-        console.log("Parsed entries:", parsedEntries);
         // Add IDs to old entries that don't have them
         const entriesWithIds = parsedEntries.map((entry: any) => ({
           ...entry,
           id: entry.id || `${entry.date}-${entry.time}`,
         }));
-        console.log("Entries with IDs:", entriesWithIds);
         setEntries(entriesWithIds);
       } catch (error) {
         console.error("Failed to parse entries from localStorage:", error);
       }
-    } else {
-      console.log("No entries found in localStorage");
     }
   }, []);
 
@@ -105,9 +100,7 @@ export function useEntries() {
       ...entry,
       id: `${entry.date}-${entry.time}`,
     };
-    console.log("Saving entry:", newEntry);
     const updatedEntries = [newEntry, ...entries];
-    console.log("Updated entries after save:", updatedEntries.map(e => ({ id: e.id, date: e.date })));
     setEntries(updatedEntries);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedEntries));
   };
@@ -130,16 +123,12 @@ export function useEntries() {
 
   const hasTodayEntry = () => {
     const today = format(new Date(), "yyyy-MM-dd");
-    const hasEntry = entries.some(entry => entry.date === today);
-    console.log("hasTodayEntry check:", { today, entriesCount: entries.length, hasEntry, entries: entries.map(e => e.date) });
-    return hasEntry;
+    return entries.some(entry => entry.date === today);
   };
 
   const hasYesterdayEntry = () => {
     const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd");
-    const hasEntry = entries.some(entry => entry.date === yesterday);
-    console.log("hasYesterdayEntry check:", { yesterday, entriesCount: entries.length, hasEntry, entries: entries.map(e => e.date) });
-    return hasEntry;
+    return entries.some(entry => entry.date === yesterday);
   };
 
   const getTodayEntry = () => {
