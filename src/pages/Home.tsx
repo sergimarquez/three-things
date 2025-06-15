@@ -1,3 +1,9 @@
+import EntryInput from "../components/EntryInput";
+
 export default function Home() {
-  return <div className="p-4 text-xl">Home Page</div>;
-} 
+  return (
+    <div className="max-w-xl mx-auto">
+      <EntryInput />
+    </div>
+  );
+}
