@@ -1,45 +1,49 @@
-import { Link, useLocation } from 'react-router-dom';
+import React from "react";
+import { Outlet, Link, useLocation } from "react-router-dom";
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
-
-export default function Layout({ children }: LayoutProps) {
+export default function Layout() {
   const location = useLocation();
 
   const navItems = [
-    { path: '/', label: 'Home' },
-    { path: '/archive', label: 'Journal' },
-    { path: '/streak', label: 'Streak' },
-    { path: '/review', label: 'Review' },
-    { path: '/export', label: 'Export' },
-    { path: '/instructions', label: 'Instructions' },
+    { name: "3 Things", path: "/" },
+    { name: "Journal", path: "/archive" },
+    { name: "Streak", path: "/streak" },
+    { name: "Review", path: "/review" },
+    { name: "Export", path: "/export" },
+    { name: "Instructions", path: "/instructions" },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="flex space-x-8 py-4">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  location.pathname === item.path
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
+      <nav className="bg-white shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex space-x-8">
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`relative inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                      isActive
+                        ? "border-blue-500 text-gray-900"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </div>
       </nav>
-
-      <main className="py-8">
-        {children}
+      
+      <main className="max-w-6xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

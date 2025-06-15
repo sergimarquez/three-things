@@ -10,16 +10,16 @@ import Instructions from './pages/Instructions';
 function App() {
   return (
     <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/archive" element={<Archive />} />
-          <Route path="/streak" element={<Streak />} />
-          <Route path="/review" element={<Review />} />
-          <Route path="/export" element={<Export />} />
-          <Route path="/instructions" element={<Instructions />} />
-        </Routes>
-      </Layout>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Home />} />
+          <Route path="archive" element={<Archive />} />
+          <Route path="streak" element={<Streak />} />
+          <Route path="review" element={<Review />} />
+          <Route path="export" element={<Export />} />
+          <Route path="instructions" element={<Instructions />} />
+        </Route>
+      </Routes>
     </Router>
   );
 }
