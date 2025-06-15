@@ -7,44 +7,48 @@ export type EntryItem = {
 };
 
 export type Entry = {
-  date: string; // "2025-06-15"
-  time: string; // "14:03"
-  items: [EntryItem?, EntryItem?, EntryItem?];
+  date: string;
+  time: string;
+  items: [EntryItem, EntryItem, EntryItem];
 };
-
-export type Entries = Entry[];
 
 const STORAGE_KEY = "three-things-entries";
 
 export function useEntries() {
-  const [entries, setEntries] = useState<Entries>([]);
+  const [entries, setEntries] = useState<Entry[]>([]);
 
+  // Load entries from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      setEntries(JSON.parse(stored));
+      try {
+        setEntries(JSON.parse(stored));
+      } catch (error) {
+        console.error("Failed to parse entries from localStorage:", error);
+      }
     }
   }, []);
 
   const saveEntry = (entry: Entry) => {
-    const updated = [entry, ...entries.filter(e => e.date !== entry.date)];
-    setEntries(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    const updatedEntries = [entry, ...entries];
+    setEntries(updatedEntries);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedEntries));
   };
 
-  const getEntryByDate = (date: string): Entry | undefined => {
-    return entries.find(e => e.date === date);
-  };
-
-  const hasTodayEntry = (): boolean => {
+  const hasTodayEntry = () => {
     const today = format(new Date(), "yyyy-MM-dd");
-    return entries.some(e => e.date === today);
+    return entries.some(entry => entry.date === today);
+  };
+
+  const getTodayEntry = () => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    return entries.find(entry => entry.date === today);
   };
 
   return {
     entries,
     saveEntry,
-    getEntryByDate,
     hasTodayEntry,
+    getTodayEntry,
   };
 }
