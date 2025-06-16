@@ -1,54 +1,61 @@
-# React + TypeScript + Vite
+# 3Good
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A thoughtful daily gratitude practice app. Simple, focused, and privacy-first.
 
-Currently, two official plugins are available:
+## What is 3Good?
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+3Good helps you build a consistent gratitude practice by reflecting on what you're grateful for each day. Record three good things, track your progress, and cultivate a more positive mindset over time.
 
-## Expanding the ESLint configuration
+## Features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Core Practice
+- **Daily Reflection** - Record three things you're grateful for today
+- **Streak Tracking** - Build consistency with daily streak counters
+- **Star Favorites** - Mark special moments that stand out
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+### Journal & Progress
+- **Searchable Journal** - Browse and search all your past reflections
+- **Progress Insights** - Monthly completion rates and motivational feedback
+- **Edit & Delete** - Modify past entries as needed
+
+### Data Control
+- **Export Options** - Download your data in JSON, CSV, Text, or Markdown
+- **Import Backups** - Restore from previous exports
+- **Privacy First** - All data stays on your device (localStorage)
+
+## Tech Stack
+
+- **React** + **TypeScript** + **Vite**
+- **Tailwind CSS** for styling
+- **date-fns** for date handling
+- **Lucide React** for icons
+- **React Router** for navigation
+
+## Getting Started
+
+### Development
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+### Production Build
+```bash
+npm run build
 ```
+
+## Design Philosophy
+
+3Good is built for people who value:
+- **Simplicity** - Clean, distraction-free interface
+- **Privacy** - Your reflections stay on your device
+- **Consistency** - Gentle encouragement to build the habit
+- **Mindfulness** - Thoughtful design that promotes reflection
+
+## License
+
+MIT License - feel free to fork and adapt for your own use.
+
+---
+
+*Built with intention — a tool for mindful reflection*
