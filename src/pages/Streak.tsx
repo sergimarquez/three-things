@@ -1,4 +1,4 @@
-import { format, parseISO, differenceInDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday, subDays, startOfYear, differenceInCalendarDays, startOfMonth, endOfMonth } from "date-fns";
+import { format, parseISO, differenceInDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday, subDays, differenceInCalendarDays, startOfMonth, endOfMonth } from "date-fns";
 import { useEntries } from "../hooks/useEntries";
 import { TrendingUp, Calendar, Star, Target } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -123,21 +123,7 @@ export default function Progress() {
     };
   };
 
-  // Get year progress
-  const getYearProgress = () => {
-    const yearStart = startOfYear(new Date());
-    const daysSinceYearStart = differenceInCalendarDays(new Date(), yearStart) + 1;
-    const entriesThisYear = entries.filter(entry => {
-      const entryDate = parseISO(entry.date);
-      return entryDate.getFullYear() === new Date().getFullYear();
-    }).length;
-    
-    return {
-      daysSinceYearStart,
-      entriesThisYear,
-      percentage: Math.round((entriesThisYear / daysSinceYearStart) * 100)
-    };
-  };
+
 
   const streak = calculateStreak();
   const longestStreak = calculateLongestStreak();
@@ -146,7 +132,6 @@ export default function Progress() {
   const weeklyActivity = getWeeklyActivity();
   const recentActivity = getRecentActivity();
   const monthlyProgress = getMonthlyProgress();
-  const yearProgress = getYearProgress();
   const totalStarred = entries.reduce((sum, entry) => sum + entry.items.filter(item => item.favorite).length, 0);
   const totalItems = entries.reduce((sum, entry) => sum + entry.items.length, 0);
 
@@ -275,40 +260,7 @@ export default function Progress() {
         </div>
       </div>
 
-      {/* Year Progress */}
-      <div className="bg-white border border-stone-200 rounded-xl p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Target size={20} className="text-stone-600" />
-          <h3 className="font-medium text-stone-900">This Year</h3>
-        </div>
-        
-        <div className="space-y-4">
-          <div className="flex justify-between text-sm">
-            <span className="text-stone-600">
-              {yearProgress.entriesThisYear} of {yearProgress.daysSinceYearStart} days
-            </span>
-            <span className="font-medium text-stone-900">
-              {yearProgress.percentage}%
-            </span>
-          </div>
-          
-          <div className="w-full bg-stone-200 rounded-full h-2">
-            <div 
-              className="bg-stone-900 h-2 rounded-full transition-all duration-500"
-              style={{ width: `${yearProgress.percentage}%` }}
-            ></div>
-          </div>
-          
-          <p className="text-sm text-stone-600">
-            {yearProgress.percentage >= 80 
-              ? "Excellent consistency in your practice"
-              : yearProgress.percentage >= 50
-                ? "Good progress — keep building the habit"
-                : "Every reflection counts — stay consistent"
-            }
-          </p>
-        </div>
-      </div>
+
     </div>
   );
 } 

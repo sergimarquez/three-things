@@ -5,7 +5,7 @@ export default function About() {
     <div className="max-w-3xl mx-auto">
       {/* Header */}
       <div className="mb-12 text-center">
-        <h1 className="text-2xl font-medium text-stone-900 mb-4">About Noticing</h1>
+        <h1 className="text-2xl font-medium text-stone-900 mb-4">About 3Good</h1>
         <p className="text-lg text-stone-600 leading-relaxed">
           A mindful practice in daily gratitude — built with intention for those who value 
           thoughtful reflection over endless productivity.
