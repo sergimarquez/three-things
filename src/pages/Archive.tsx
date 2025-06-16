@@ -1,13 +1,15 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { format, parseISO, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { useEntries } from "../hooks/useEntries";
 import type { EntryItem } from "../hooks/useEntries";
-import { Search, Star, Edit3, Trash2, Filter, X, Plus } from "lucide-react";
+import { Search, Star, Edit3, Trash2, Filter, X, Plus, Upload } from "lucide-react";
 
 export default function Archive() {
-  const { entries, updateEntry, deleteEntry, addFakeData } = useEntries();
+  const { entries, updateEntry, deleteEntry, addFakeData, importEntries } = useEntries();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingItems, setEditingItems] = useState<EntryItem[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -69,6 +71,57 @@ export default function Archive() {
 
   const activeFiltersCount = [searchTerm, showStarredOnly, dateFrom, dateTo].filter(Boolean).length;
 
+  const handleImport = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const data = JSON.parse(content);
+        
+        // Validate the JSON structure
+        if (!data.entries || !Array.isArray(data.entries)) {
+          throw new Error('Invalid file format');
+        }
+
+        // Import the entries
+        const importedCount = importEntries(data.entries);
+        
+        if (importedCount > 0) {
+          setImportStatus({
+            type: 'success',
+            message: `Successfully imported ${importedCount} new ${importedCount === 1 ? 'reflection' : 'reflections'}`
+          });
+        } else {
+          setImportStatus({
+            type: 'success',
+            message: 'No new reflections to import (all entries already exist)'
+          });
+        }
+        
+        // Clear the status after 5 seconds
+        setTimeout(() => setImportStatus(null), 5000);
+        
+      } catch (error) {
+        setImportStatus({
+          type: 'error',
+          message: 'Failed to import file. Please ensure it\'s a valid 3Good JSON export.'
+        });
+        setTimeout(() => setImportStatus(null), 5000);
+      }
+    };
+    
+    reader.readAsText(file);
+    // Reset the input
+    event.target.value = '';
+  };
+
   if (entries.length === 0) {
     return (
       <div className="max-w-2xl mx-auto text-center">
@@ -81,16 +134,26 @@ export default function Archive() {
             Your journal is empty
           </h2>
           <p className="text-stone-600 mb-6">
-            Start your gratitude practice by recording your first reflection
+            Start your gratitude practice by recording your first reflection, or import from a backup
           </p>
           
-          <button
-            onClick={addFakeData}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors"
-          >
-            <Plus size={16} />
-            Add Sample Entries
-          </button>
+          <div className="flex items-center gap-3 justify-center">
+            <button
+              onClick={handleImport}
+              className="inline-flex items-center gap-2 px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors"
+            >
+              <Upload size={16} />
+              Import Backup
+            </button>
+            
+            <button
+              onClick={addFakeData}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors"
+            >
+              <Plus size={16} />
+              Add Sample Entries
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -150,25 +213,57 @@ export default function Archive() {
           </p>
         </div>
         
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={`
-            inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-            ${showFilters || activeFiltersCount > 0
-              ? "bg-stone-900 text-white" 
-              : "border border-stone-300 text-stone-700 hover:bg-stone-50"
-            }
-          `}
-        >
-          <Filter size={16} />
-          Filters
-          {activeFiltersCount > 0 && (
-            <span className="bg-stone-700 text-xs px-1.5 py-0.5 rounded-full">
-              {activeFiltersCount}
-            </span>
-          )}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleImport}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-stone-300 text-stone-700 hover:bg-stone-50 transition-colors"
+          >
+            <Upload size={16} />
+            Import
+          </button>
+          
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`
+              inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+              ${showFilters || activeFiltersCount > 0
+                ? "bg-stone-900 text-white" 
+                : "border border-stone-300 text-stone-700 hover:bg-stone-50"
+              }
+            `}
+          >
+            <Filter size={16} />
+            Filters
+            {activeFiltersCount > 0 && (
+              <span className="bg-stone-700 text-xs px-1.5 py-0.5 rounded-full">
+                {activeFiltersCount}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
+      {/* Import Status */}
+      {importStatus && (
+        <div className={`
+          mb-6 p-4 rounded-lg border
+          ${importStatus.type === 'success' 
+            ? 'bg-green-50 border-green-200 text-green-800' 
+            : 'bg-red-50 border-red-200 text-red-800'
+          }
+        `}>
+          {importStatus.message}
+        </div>
+      )}
 
       {/* Filters Panel */}
       {showFilters && (

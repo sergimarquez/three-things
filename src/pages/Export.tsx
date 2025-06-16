@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { format, parseISO } from "date-fns";
 import { useEntries } from "../hooks/useEntries";
-import { Download, FileText, Table, File, FileCode } from "lucide-react";
+import { Download, FileText, Table, File, FileCode, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function Export() {
@@ -72,7 +72,7 @@ export default function Export() {
       return `${date} at ${entry.time}\n   ${items}\n`;
     }).join('\n');
 
-    const header = `Noticing - Reflection Journal\nExported: ${format(new Date(), 'EEEE, MMMM d, yyyy \'at\' HH:mm')}\nTotal entries: ${entries.length}\n\n${'='.repeat(50)}\n\n`;
+    const header = `3Good - Reflection Journal\nExported: ${format(new Date(), 'EEEE, MMMM d, yyyy \'at\' HH:mm')}\nTotal entries: ${entries.length}\n\n${'='.repeat(50)}\n\n`;
     
     const filename = `three-things-${format(new Date(), 'yyyy-MM-dd')}.txt`;
     downloadFile(header + content, filename, 'text/plain');
@@ -88,7 +88,7 @@ export default function Export() {
       return `## ${date} at ${entry.time}\n\n${items}\n`;
     }).join('\n');
 
-    const header = `# Noticing - Reflection Journal\n\n**Exported:** ${format(new Date(), 'EEEE, MMMM d, yyyy \'at\' HH:mm')}  \n**Total entries:** ${entries.length}\n\n---\n\n`;
+    const header = `# 3Good - Reflection Journal\n\n**Exported:** ${format(new Date(), 'EEEE, MMMM d, yyyy \'at\' HH:mm')}  \n**Total entries:** ${entries.length}\n\n---\n\n`;
     
     const filename = `three-things-${format(new Date(), 'yyyy-MM-dd')}.md`;
     downloadFile(header + content, filename, 'text/markdown');
