@@ -148,6 +148,23 @@ export function useEntries() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(combinedEntries));
   };
 
+  const importEntries = (importedEntries: Entry[]) => {
+    // Filter out duplicates based on date and time
+    const existingKeys = new Set(entries.map(entry => `${entry.date}-${entry.time}`));
+    const newEntries = importedEntries.filter(entry => 
+      !existingKeys.has(`${entry.date}-${entry.time}`)
+    );
+    
+    // Combine with existing entries and sort by date (newest first)
+    const combinedEntries = [...entries, ...newEntries]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    setEntries(combinedEntries);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(combinedEntries));
+    
+    return newEntries.length; // Return count of newly imported entries
+  };
+
   return {
     entries,
     saveEntry,
@@ -158,5 +175,6 @@ export function useEntries() {
     getTodayEntry,
     getYesterdayEntry,
     addFakeData,
+    importEntries,
   };
 }
