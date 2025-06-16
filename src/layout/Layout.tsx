@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { useEntries } from "../hooks/useEntries";
 import { Circle, BookOpen, TrendingUp, Download, Info } from "lucide-react";
 
 export default function Layout() {
   const location = useLocation();
-  const { hasTodayEntry } = useEntries();
   const [forceUpdate, setForceUpdate] = useState(0);
 
   // Listen for entry additions to force re-render
@@ -16,7 +14,7 @@ export default function Layout() {
 
     window.addEventListener('entryAdded', handleEntryAdded);
     return () => window.removeEventListener('entryAdded', handleEntryAdded);
-  }, []);
+  }, [forceUpdate]);
 
   const navItems = [
     { name: "Reflect", path: "/", icon: Circle },

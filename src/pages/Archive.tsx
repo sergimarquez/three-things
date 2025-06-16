@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import { format, parseISO, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { useEntries } from "../hooks/useEntries";
 import type { EntryItem } from "../hooks/useEntries";
-import { Search, Star, Edit3, Trash2, Filter, X, Plus, Upload } from "lucide-react";
+import { Search, Star, Edit3, Trash2, Filter, Plus, Upload } from "lucide-react";
 
 export default function Archive() {
   const { entries, updateEntry, deleteEntry, addFakeData, importEntries } = useEntries();

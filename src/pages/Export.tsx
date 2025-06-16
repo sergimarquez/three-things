@@ -1,7 +1,7 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import { useEntries } from "../hooks/useEntries";
-import { Download, FileText, Table, File, FileCode, Upload } from "lucide-react";
+import { Download, FileText, Table, File, FileCode } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function Export() {

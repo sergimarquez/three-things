@@ -1,6 +1,6 @@
 import { format, parseISO, differenceInDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday, subDays, differenceInCalendarDays, startOfMonth, endOfMonth } from "date-fns";
 import { useEntries } from "../hooks/useEntries";
-import { TrendingUp, Calendar, Star, Target } from "lucide-react";
+import { TrendingUp, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function Progress() {
@@ -52,29 +52,7 @@ export default function Progress() {
     return maxStreak;
   };
 
-  // Calculate days since first entry
-  const getDaysSinceStart = () => {
-    if (entries.length === 0) return 0;
-    const firstEntry = entries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
-    return differenceInCalendarDays(new Date(), parseISO(firstEntry.date));
-  };
 
-  // Calculate longest gap between entries
-  const getLongestGap = () => {
-    if (entries.length < 2) return 0;
-    
-    const sortedEntries = [...entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    let maxGap = 0;
-    
-    for (let i = 1; i < sortedEntries.length; i++) {
-      const currentDate = parseISO(sortedEntries[i].date);
-      const previousDate = parseISO(sortedEntries[i - 1].date);
-      const gap = differenceInCalendarDays(currentDate, previousDate) - 1;
-      maxGap = Math.max(maxGap, gap);
-    }
-    
-    return maxGap;
-  };
 
   // Get weekly activity
   const getWeeklyActivity = () => {
@@ -95,12 +73,7 @@ export default function Progress() {
     });
   };
 
-  // Get recent activity
-  const getRecentActivity = () => {
-    return entries
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 7);
-  };
+
 
   // Get monthly progress
   const getMonthlyProgress = () => {
@@ -127,13 +100,9 @@ export default function Progress() {
 
   const streak = calculateStreak();
   const longestStreak = calculateLongestStreak();
-  const daysSinceStart = getDaysSinceStart();
-  const longestGap = getLongestGap();
   const weeklyActivity = getWeeklyActivity();
-  const recentActivity = getRecentActivity();
   const monthlyProgress = getMonthlyProgress();
   const totalStarred = entries.reduce((sum, entry) => sum + entry.items.filter(item => item.favorite).length, 0);
-  const totalItems = entries.reduce((sum, entry) => sum + entry.items.length, 0);
 
   if (entries.length === 0) {
     return (

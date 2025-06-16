@@ -1,4 +1,4 @@
-import { Entry } from "../hooks/useEntries";
+import type { Entry } from "../hooks/useEntries";
 
 type Props = {
   entry: Entry;
