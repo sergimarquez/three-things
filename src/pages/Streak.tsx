@@ -106,7 +106,7 @@ export default function Progress() {
 
   if (entries.length === 0) {
     return (
-      <div className="max-w-2xl mx-auto text-center">
+      <div className="max-w-2xl mx-auto text-center animate-[fadeIn_0.3s_ease-out]">
         <div className="bg-white border border-stone-200 rounded-2xl p-8">
           <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <TrendingUp size={24} className="text-stone-400" />
@@ -131,7 +131,7 @@ export default function Progress() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto animate-[fadeIn_0.3s_ease-out]">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-medium text-stone-900 mb-2">Progress</h1>

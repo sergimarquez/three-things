@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { useEntries } from "../hooks/useEntries";
 import type { EntryItem } from "../hooks/useEntries";
 import { Link } from "react-router-dom";
-import { Star, BookOpen, TrendingUp, ArrowRight } from "lucide-react";
+import { Star, BookOpen, TrendingUp, ArrowRight, Check } from "lucide-react";
 
 const placeholders = [
   "Something you're grateful for today...",
@@ -27,6 +27,7 @@ export default function EntryInput() {
     { text: "" },
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
   // Pick a message based on today's date (static for the day)
   const getTodayMessage = () => {
@@ -63,21 +64,57 @@ export default function EntryInput() {
     // Dispatch custom event to notify Layout of the change
     window.dispatchEvent(new CustomEvent('entryAdded'));
     
-    // Reset form after successful save
+    // Show success animation
+    setTimeout(() => {
+      setShowSuccessAnimation(true);
+    }, 300);
+    
+    // Reset form after animation completes
     setTimeout(() => {
       setItems([{ text: "" }, { text: "" }, { text: "" }]);
       setIsSubmitting(false);
-    }, 500);
+    }, 2000);
   };
 
   // Check how many fields are filled
   const filledCount = items.filter(item => item.text.trim().length > 0).length;
   const isFormValid = filledCount === 3;
 
+  // Success Animation Component
+  if (showSuccessAnimation && !hasTodayEntry()) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            {/* Animated Checkmark */}
+            <div className="relative mb-8">
+              <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto animate-[bounce_0.6s_ease-in-out] shadow-lg">
+                <Check size={48} className="text-white animate-[fadeIn_0.8s_ease-in-out_0.3s_both]" />
+              </div>
+              {/* Ripple effect */}
+              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-24 h-24 bg-green-200 rounded-full animate-[ping_1s_cubic-bezier(0,0,0.2,1)_0.2s]"></div>
+              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-24 h-24 bg-green-100 rounded-full animate-[ping_1s_cubic-bezier(0,0,0.2,1)_0.5s]"></div>
+            </div>
+            
+            {/* Success Message */}
+            <div className="animate-[fadeInUp_0.8s_ease-out_0.5s_both]">
+              <h2 className="text-2xl font-medium text-stone-900 mb-3">
+                Gratitude Saved! ✨
+              </h2>
+              <p className="text-stone-600 text-lg">
+                Your three good things have been recorded
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (hasTodayEntry()) {
     return (
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white border border-stone-200 rounded-2xl p-8 text-center">
+        <div className="bg-white border border-stone-200 rounded-2xl p-8 text-center animate-[fadeIn_0.5s_ease-out]">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <div className="w-8 h-8 bg-green-500 rounded-full"></div>
           </div>
@@ -92,7 +129,7 @@ export default function EntryInput() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               to="/archive"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-all duration-200 hover:scale-105"
             >
               <BookOpen size={16} />
               View Journal
@@ -101,7 +138,7 @@ export default function EntryInput() {
             
             <Link
               to="/streak"
-              className="inline-flex items-center gap-2 px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-all duration-200 hover:scale-105"
             >
               <TrendingUp size={16} />
               Check Progress
@@ -132,7 +169,7 @@ export default function EntryInput() {
       </div>
 
       {/* Form */}
-      <div className="space-y-6">
+      <div className={`space-y-6 transition-all duration-300 ${isSubmitting ? 'opacity-50 scale-95' : ''}`}>
         {items.map((item, i) => (
           <div key={i} className="group">
             <div className="flex items-center justify-between mb-2">
@@ -173,6 +210,7 @@ export default function EntryInput() {
                 "
                 placeholder={placeholders[i]}
                 rows={3}
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -186,13 +224,19 @@ export default function EntryInput() {
             className={`
               w-full py-3 px-4 rounded-xl font-medium transition-all duration-200
               ${isFormValid && !isSubmitting
-                ? "bg-stone-900 text-white hover:bg-stone-800" 
+                ? "bg-stone-900 text-white hover:bg-stone-800 hover:scale-105" 
                 : "bg-stone-100 text-stone-400 cursor-not-allowed"
               }
+              ${isSubmitting ? "animate-pulse" : ""}
             `}
           >
             {isSubmitting 
-              ? "Saving..." 
+              ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Saving your gratitude...
+                </span>
+              )
               : isFormValid 
                 ? "Save Today's Gratitude" 
                 : `${3 - filledCount} more to complete`
