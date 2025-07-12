@@ -2,12 +2,12 @@ import { Heart, Brain, Moon, Users, Focus, Lightbulb, Shield, Smartphone } from 
 
 export default function About() {
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-12 text-center">
         <h1 className="text-2xl font-medium text-stone-900 mb-4">About 3Good</h1>
         <p className="text-lg text-stone-600 leading-relaxed">
-          A mindful practice in daily gratitude — built with intention for those who value 
+          A mindful practice in daily gratitude — built with intention for those who value
           thoughtful reflection over endless productivity.
         </p>
       </div>
@@ -17,11 +17,11 @@ export default function About() {
         <h2 className="text-lg font-medium text-stone-900 mb-4">The Practice</h2>
         <div className="prose prose-stone max-w-none">
           <p className="text-stone-700 leading-relaxed mb-4">
-            Each day brings moments worth appreciating — some small, others profound. 
+            Each day brings moments worth appreciating — some small, others profound.
             This simple practice asks you to pause and notice what you're grateful for today.
           </p>
           <p className="text-stone-700 leading-relaxed">
-            Not to force positivity, but to train attention. To build the habit of noticing good 
+            Not to force positivity, but to train attention. To build the habit of noticing good
             alongside difficulty. To create a record of appreciation that grows over time.
           </p>
         </div>
@@ -43,7 +43,7 @@ export default function About() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 bg-stone-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Moon size={20} className="text-stone-600" />
@@ -56,7 +56,7 @@ export default function About() {
               </div>
             </div>
           </div>
-          
+
           <div className="space-y-4">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 bg-stone-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -69,7 +69,7 @@ export default function About() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 bg-stone-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Focus size={20} className="text-stone-600" />
@@ -96,12 +96,12 @@ export default function About() {
             <div>
               <h3 className="font-medium text-stone-900 mb-2">Notice Today's Good</h3>
               <p className="text-stone-700 text-sm leading-relaxed">
-                Each day, think about what you're grateful for right now. What moments brought you joy, 
+                Each day, think about what you're grateful for right now. What moments brought you joy,
                 satisfaction, or peace? They can be small (good coffee) or significant (meaningful conversation).
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-start gap-4">
             <div className="w-8 h-8 bg-stone-900 text-white rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">
               2
@@ -109,12 +109,12 @@ export default function About() {
             <div>
               <h3 className="font-medium text-stone-900 mb-2">Be Specific</h3>
               <p className="text-stone-700 text-sm leading-relaxed">
-                Instead of "nice weather," try "the way afternoon light fell across my desk." 
+                Instead of "nice weather," try "the way afternoon light fell across my desk."
                 Specificity makes memories more vivid and meaningful.
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-start gap-4">
             <div className="w-8 h-8 bg-stone-900 text-white rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">
               3
@@ -122,12 +122,12 @@ export default function About() {
             <div>
               <h3 className="font-medium text-stone-900 mb-2">Mark What Matters</h3>
               <p className="text-stone-700 text-sm leading-relaxed">
-                Star the moments that feel especially significant. These become touchstones — 
+                Star the moments that feel especially significant. These become touchstones —
                 reminders of what brings you alive.
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-start gap-4">
             <div className="w-8 h-8 bg-stone-900 text-white rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">
               4
@@ -135,7 +135,7 @@ export default function About() {
             <div>
               <h3 className="font-medium text-stone-900 mb-2">Stay Consistent</h3>
               <p className="text-stone-700 text-sm leading-relaxed">
-                Like any practice, consistency matters more than perfection. 
+                Like any practice, consistency matters more than perfection.
                 Even a few minutes daily builds the habit of noticing good.
               </p>
             </div>
@@ -171,7 +171,7 @@ export default function About() {
                 <p className="text-sm text-stone-600">Your reflections stay on your device</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <Heart size={18} className="text-stone-600" />
               <div>
@@ -179,7 +179,7 @@ export default function About() {
                 <p className="text-sm text-stone-600">No analytics, ads, or data collection</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <Smartphone size={18} className="text-stone-600" />
               <div>
@@ -188,7 +188,7 @@ export default function About() {
               </div>
             </div>
           </div>
-          
+
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <Focus size={18} className="text-stone-600" />
@@ -197,7 +197,7 @@ export default function About() {
                 <p className="text-sm text-stone-600">Clean interface, no unnecessary features</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <Brain size={18} className="text-stone-600" />
               <div>
@@ -205,7 +205,7 @@ export default function About() {
                 <p className="text-sm text-stone-600">Your data, in formats you can use</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <Users size={18} className="text-stone-600" />
               <div>
@@ -215,10 +215,10 @@ export default function About() {
             </div>
           </div>
         </div>
-        
+
         <div className="mt-8 pt-6 border-t border-stone-200 text-center">
           <p className="text-sm text-stone-600">
-            Created by a frontend developer who believes in building focused, 
+            Created by a frontend developer who believes in building focused,
             thoughtful tools for mindful living.
           </p>
         </div>

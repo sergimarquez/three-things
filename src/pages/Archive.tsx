@@ -10,7 +10,7 @@ export default function Archive() {
   const [editingItems, setEditingItems] = useState<EntryItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
-  
+
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
   const [showStarredOnly, setShowStarredOnly] = useState(false);
@@ -29,7 +29,7 @@ export default function Archive() {
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
-        const matchesText = entry.items.some(item => 
+        const matchesText = entry.items.some(item =>
           item.text.toLowerCase().includes(searchLower)
         );
         if (!matchesText) return false;
@@ -84,7 +84,7 @@ export default function Archive() {
       try {
         const content = e.target?.result as string;
         const data = JSON.parse(content);
-        
+
         // Validate the JSON structure
         if (!data.entries || !Array.isArray(data.entries)) {
           throw new Error('Invalid file format');
@@ -92,7 +92,7 @@ export default function Archive() {
 
         // Import the entries
         const importedCount = importEntries(data.entries);
-        
+
         if (importedCount > 0) {
           setImportStatus({
             type: 'success',
@@ -104,10 +104,10 @@ export default function Archive() {
             message: 'No new reflections to import (all entries already exist)'
           });
         }
-        
+
         // Clear the status after 5 seconds
         setTimeout(() => setImportStatus(null), 5000);
-        
+
       } catch (error) {
         setImportStatus({
           type: 'error',
@@ -116,7 +116,7 @@ export default function Archive() {
         setTimeout(() => setImportStatus(null), 5000);
       }
     };
-    
+
     reader.readAsText(file);
     // Reset the input
     event.target.value = '';
@@ -129,14 +129,14 @@ export default function Archive() {
           <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <div className="w-8 h-8 border-2 border-stone-300 rounded-full border-dashed"></div>
           </div>
-          
+
           <h2 className="text-xl font-medium text-stone-900 mb-2">
             Your journal is empty
           </h2>
           <p className="text-stone-600 mb-6">
             Start your gratitude practice by recording your first reflection, or import from a backup
           </p>
-          
+
           <div className="flex items-center gap-3 justify-center">
             <button
               onClick={handleImport}
@@ -145,7 +145,7 @@ export default function Archive() {
               <Upload size={16} />
               Import Backup
             </button>
-            
+
             <button
               onClick={addFakeData}
               className="inline-flex items-center gap-2 px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors"
@@ -202,7 +202,7 @@ export default function Archive() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto animate-[fadeIn_0.3s_ease-out]">
+    <div className="max-w-4xl mx-auto animate-[fadeIn_0.3s_ease-out]">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -212,7 +212,7 @@ export default function Archive() {
             {activeFiltersCount > 0 && ` (filtered)`}
           </p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <button
             onClick={handleImport}
@@ -221,13 +221,13 @@ export default function Archive() {
             <Upload size={16} />
             Import
           </button>
-          
+
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`
               inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors
               ${showFilters || activeFiltersCount > 0
-                ? "bg-stone-900 text-white" 
+                ? "bg-stone-900 text-white"
                 : "border border-stone-300 text-stone-700 hover:bg-stone-50"
               }
             `}
@@ -256,8 +256,8 @@ export default function Archive() {
       {importStatus && (
         <div className={`
           mb-6 p-4 rounded-lg border
-          ${importStatus.type === 'success' 
-            ? 'bg-green-50 border-green-200 text-green-800' 
+          ${importStatus.type === 'success'
+            ? 'bg-green-50 border-green-200 text-green-800'
             : 'bg-red-50 border-red-200 text-red-800'
           }
         `}>
@@ -279,7 +279,7 @@ export default function Archive() {
               </button>
             )}
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Search */}
             <div className="md:col-span-2">
@@ -352,7 +352,7 @@ export default function Archive() {
                   {formatDisplayDate(entry.date, entry.time)}
                 </h3>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => startEditing(entry.id, entry.items)}
@@ -380,9 +380,8 @@ export default function Archive() {
                       </label>
                       <button
                         onClick={() => toggleEditFavorite(index)}
-                        className={`p-1 rounded transition-colors ${
-                          item.favorite ? "text-amber-500" : "text-stone-300 hover:text-amber-400"
-                        }`}
+                        className={`p-1 rounded transition-colors ${item.favorite ? "text-amber-500" : "text-stone-300 hover:text-amber-400"
+                          }`}
                       >
                         <Star size={16} fill={item.favorite ? "currentColor" : "none"} />
                       </button>
@@ -395,7 +394,7 @@ export default function Archive() {
                     />
                   </div>
                 ))}
-                
+
                 <div className="flex items-center gap-2 pt-2">
                   <button
                     onClick={() => saveEdit(entry.id, entry.date, entry.time)}
@@ -416,9 +415,8 @@ export default function Archive() {
                 {entry.items.map((item, index) => (
                   <div
                     key={index}
-                    className={`p-3 rounded-lg ${
-                      item.favorite ? "bg-amber-50 border border-amber-200" : "bg-stone-50"
-                    }`}
+                    className={`p-3 rounded-lg ${item.favorite ? "bg-amber-50 border border-amber-200" : "bg-stone-50"
+                      }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-stone-900 flex-1">{item.text}</p>

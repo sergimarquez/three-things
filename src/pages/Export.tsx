@@ -65,15 +65,15 @@ export default function Export() {
   const exportAsText = () => {
     const content = entries.map(entry => {
       const date = format(parseISO(entry.date), 'EEEE, MMMM d, yyyy');
-      const items = entry.items.map((item, index) => 
+      const items = entry.items.map((item, index) =>
         `${index + 1}. ${item.text}${item.favorite ? ' ★' : ''}`
       ).join('\n   ');
-      
+
       return `${date} at ${entry.time}\n   ${items}\n`;
     }).join('\n');
 
     const header = `3Good - Reflection Journal\nExported: ${format(new Date(), 'EEEE, MMMM d, yyyy \'at\' HH:mm')}\nTotal entries: ${entries.length}\n\n${'='.repeat(50)}\n\n`;
-    
+
     const filename = `three-things-${format(new Date(), 'yyyy-MM-dd')}.txt`;
     downloadFile(header + content, filename, 'text/plain');
   };
@@ -81,24 +81,24 @@ export default function Export() {
   const exportAsMarkdown = () => {
     const content = entries.map(entry => {
       const date = format(parseISO(entry.date), 'EEEE, MMMM d, yyyy');
-      const items = entry.items.map((item, index) => 
+      const items = entry.items.map((item, index) =>
         `${index + 1}. ${item.text}${item.favorite ? ' ★' : ''}`
       ).join('\n');
-      
+
       return `## ${date} at ${entry.time}\n\n${items}\n`;
     }).join('\n');
 
     const header = `# 3Good - Reflection Journal\n\n**Exported:** ${format(new Date(), 'EEEE, MMMM d, yyyy \'at\' HH:mm')}  \n**Total entries:** ${entries.length}\n\n---\n\n`;
-    
+
     const filename = `three-things-${format(new Date(), 'yyyy-MM-dd')}.md`;
     downloadFile(header + content, filename, 'text/markdown');
   };
 
   const handleExport = async () => {
     setIsExporting(true);
-    
+
     await new Promise(resolve => setTimeout(resolve, 500));
-    
+
     switch (exportFormat) {
       case 'json':
         exportAsJSON();
@@ -113,7 +113,7 @@ export default function Export() {
         exportAsMarkdown();
         break;
     }
-    
+
     setIsExporting(false);
   };
 
@@ -151,14 +151,14 @@ export default function Export() {
           <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Download size={24} className="text-stone-400" />
           </div>
-          
+
           <h2 className="text-xl font-medium text-stone-900 mb-2">
             Nothing to export yet
           </h2>
           <p className="text-stone-600 mb-6">
             Start your reflection practice to create exportable content
           </p>
-          
+
           <Link
             to="/"
             className="inline-flex items-center gap-2 px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors"
@@ -171,7 +171,7 @@ export default function Export() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-medium text-stone-900 mb-2">Export</h1>
@@ -183,7 +183,7 @@ export default function Export() {
       {/* Format Selection */}
       <div className="bg-white border border-stone-200 rounded-2xl p-8 mb-8">
         <h2 className="font-medium text-stone-900 mb-6">Choose Format</h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {formatOptions.map((format) => {
             const Icon = format.icon;
@@ -206,14 +206,14 @@ export default function Export() {
                   onChange={(e) => setExportFormat(e.target.value as any)}
                   className="sr-only"
                 />
-                
+
                 <div className={`
                   w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0
                   ${exportFormat === format.value ? 'bg-stone-900' : 'bg-stone-100'}
                 `}>
                   <Icon size={18} className={exportFormat === format.value ? 'text-white' : 'text-stone-600'} />
                 </div>
-                
+
                 <div className="flex-1">
                   <div className="font-medium text-stone-900 mb-1">{format.label}</div>
                   <div className="text-sm text-stone-600">{format.description}</div>
@@ -230,7 +230,7 @@ export default function Export() {
         <p className="text-stone-600 mb-6 text-sm">
           Your reflections will be downloaded as a {exportFormat.toUpperCase()} file
         </p>
-        
+
         <button
           onClick={handleExport}
           disabled={isExporting}
@@ -245,7 +245,7 @@ export default function Export() {
           <Download size={18} />
           {isExporting ? 'Preparing download...' : 'Download Export'}
         </button>
-        
+
         <p className="text-xs text-stone-500 mt-4">
           Your data stays private — exports are generated locally on your device
         </p>
