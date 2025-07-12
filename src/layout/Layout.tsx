@@ -27,7 +27,7 @@ export default function Layout() {
 
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-stone-50 flex flex-col">
       {/* Header */}
       <header className="border-b border-stone-200 bg-white/80 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-6 py-4">
@@ -37,12 +37,12 @@ export default function Layout() {
                 3Good
               </h1>
             </Link>
-            
+
             <nav className="flex items-center space-x-1">
               {navItems.map((item) => {
                 const isActive = location.pathname === item.path;
                 const Icon = item.icon;
-                
+
                 return (
                   <Link
                     key={item.path}
@@ -50,8 +50,8 @@ export default function Layout() {
                     className={`
                       relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
                       transition-all duration-200 hover:bg-stone-100
-                      ${isActive 
-                        ? "text-stone-900 bg-stone-100" 
+                      ${isActive
+                        ? "text-stone-900 bg-stone-100"
                         : "text-stone-600 hover:text-stone-900"
                       }
                     `}
@@ -65,16 +65,26 @@ export default function Layout() {
           </div>
         </div>
       </header>
-      
-      <main className="max-w-4xl mx-auto px-6 py-8">
+
+      <main className="flex-1 px-6 py-8">
         <Outlet />
       </main>
-      
+
       {/* Footer */}
-      <footer className="border-t border-stone-200 bg-white/50 mt-16">
+      <footer className="border-t border-stone-200 bg-white/50">
         <div className="max-w-4xl mx-auto px-6 py-6">
           <p className="text-center text-sm text-stone-500">
-            Built with intention — a tool for mindful reflection
+            Built with <span className="italic text-stone-600">intention</span> — by{" "}
+            <a
+              href="https://github.com/sergimarquez"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-stone-600 hover:text-stone-700 transition-colors"
+            >
+              sergimarquez
+            </a>{" "}
+            <span className="mx-2 text-stone-300">|</span>
+            © {new Date().getFullYear()}
           </p>
         </div>
       </footer>
