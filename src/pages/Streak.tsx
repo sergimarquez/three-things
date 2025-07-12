@@ -104,7 +104,6 @@ export default function Progress() {
   const longestStreak = calculateLongestStreak();
   const weeklyActivity = getWeeklyActivity();
   const monthlyProgress = getMonthlyProgress();
-  const totalStarred = entries.reduce((sum, entry) => sum + entry.items.filter(item => item.favorite).length, 0);
 
   if (entries.length === 0) {
     return (
