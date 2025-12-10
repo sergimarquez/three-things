@@ -1,15 +1,35 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { format, parseISO, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { useEntries } from "../hooks/useEntries";
 import type { EntryItem } from "../hooks/useEntries";
-import { Search, Star, Edit3, Trash2, Filter, Plus, Upload } from "lucide-react";
+import { Search, Star, Edit3, Trash2, Filter, Plus, Upload, Calendar } from "lucide-react";
+import MonthlyReview from "../components/MonthlyReview";
+import MonthlyReviewCard from "../components/MonthlyReviewCard";
 
 export default function Archive() {
-  const { entries, updateEntry, deleteEntry, addFakeData, importEntries } = useEntries();
+  const {
+    entries,
+    updateEntry,
+    deleteEntry,
+    addFakeData,
+    importEntries,
+    monthlyReflections,
+    getMonthsNeedingReview,
+    isLoading,
+  } = useEntries();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingItems, setEditingItems] = useState<EntryItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [showMonthlyReviewModal, setShowMonthlyReviewModal] = useState(false);
+  const [selectedMonthForReview, setSelectedMonthForReview] = useState<string | null>(null);
+  const [showMonthlyReviews, setShowMonthlyReviews] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Mark initial load as complete after first render
+  useEffect(() => {
+    setIsInitialLoad(false);
+  }, []);
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -17,6 +37,27 @@ export default function Archive() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+
+  // Listen for monthly review updates to reload data
+  useEffect(() => {
+    const handleUpdate = () => {
+      // Trigger hook to reload monthly reflections from localStorage
+      window.dispatchEvent(new CustomEvent("reloadMonthlyReflections"));
+    };
+    window.addEventListener("monthlyReviewUpdated", handleUpdate);
+    return () => window.removeEventListener("monthlyReviewUpdated", handleUpdate);
+  }, []);
+
+  // Listen for monthly review updates to reload data
+  useEffect(() => {
+    const handleUpdate = () => {
+      setShowMonthlyReviewModal(false);
+      // Trigger hook to reload monthly reflections from localStorage
+      window.dispatchEvent(new CustomEvent("reloadMonthlyReflections"));
+    };
+    window.addEventListener("monthlyReviewUpdated", handleUpdate);
+    return () => window.removeEventListener("monthlyReviewUpdated", handleUpdate);
+  }, []);
 
   const formatDisplayDate = (dateStr: string, timeStr: string) => {
     const date = parseISO(dateStr);
@@ -61,6 +102,72 @@ export default function Archive() {
 
     return result;
   }, [entries, searchTerm, showStarredOnly, dateFrom, dateTo]);
+
+  // Get months needing review (memoized)
+  const monthsNeedingReview = useMemo(() => {
+    const today = new Date();
+    const currentMonth = format(today, "yyyy-MM");
+    
+    const monthsWithEntries = new Set<string>();
+    entries.forEach(entry => {
+      const month = format(parseISO(entry.date), "yyyy-MM");
+      monthsWithEntries.add(month);
+    });
+
+    const monthsNeeding: string[] = [];
+    monthsWithEntries.forEach(month => {
+      // Only include months that have ended (not the current month or future months)
+      if (month >= currentMonth) return;
+      
+      const hasReflection = monthlyReflections.some(r => r.month === month);
+      if (!hasReflection) {
+        monthsNeeding.push(month);
+      }
+    });
+
+    // Sort newest first
+    return monthsNeeding.sort((a, b) => b.localeCompare(a));
+  }, [monthlyReflections, entries]);
+
+  // Merge entries and monthly reviews chronologically
+  const mergedItems = useMemo(() => {
+    type MergedItem = {
+      type: 'entry' | 'monthlyReview';
+      date: string; // For sorting
+      data: any;
+    };
+
+    const items: MergedItem[] = [];
+
+    // Add entries
+    filteredEntries.forEach(entry => {
+      items.push({
+        type: 'entry',
+        date: entry.date,
+        data: entry,
+      });
+    });
+
+    // Add monthly reviews (only if showMonthlyReviews is true)
+    if (showMonthlyReviews) {
+      monthlyReflections.forEach(reflection => {
+        // Use the first day of the month for sorting
+        const monthDate = parseISO(`${reflection.month}-01`);
+        items.push({
+          type: 'monthlyReview',
+          date: format(monthDate, 'yyyy-MM-dd'),
+          data: reflection,
+        });
+      });
+    }
+
+    // Sort by date (newest first)
+    return items.sort((a, b) => {
+      const dateA = parseISO(a.date).getTime();
+      const dateB = parseISO(b.date).getTime();
+      return dateB - dateA;
+    });
+  }, [filteredEntries, monthlyReflections, showMonthlyReviews]);
 
   const clearFilters = () => {
     setSearchTerm("");
@@ -122,6 +229,21 @@ export default function Archive() {
     event.target.value = '';
   };
 
+  // Show loading state while data is being loaded from localStorage
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto animate-[fadeIn_0.3s_ease-out]">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="w-8 h-8 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-stone-600">Loading your journal...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Only show empty state after loading is complete
   if (entries.length === 0) {
     return (
       <div className="max-w-2xl mx-auto text-center animate-[fadeIn_0.3s_ease-out]">
@@ -208,7 +330,7 @@ export default function Archive() {
         <div>
           <h1 className="text-2xl font-medium text-stone-900">Journal</h1>
           <p className="text-stone-600 mt-1">
-            {filteredEntries.length} {filteredEntries.length === 1 ? 'reflection' : 'reflections'}
+            {mergedItems.length} {mergedItems.length === 1 ? 'item' : 'items'}
             {activeFiltersCount > 0 && ` (filtered)`}
           </p>
         </div>
@@ -263,6 +385,52 @@ export default function Archive() {
         `}>
           {importStatus.message}
         </div>
+      )}
+
+      {/* Months Needing Review (if any) */}
+      {!isInitialLoad && monthsNeedingReview.length > 0 && (
+        <div className="mb-6 p-4 bg-stone-50 border border-stone-200 rounded-xl">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Calendar size={18} className="text-stone-600" />
+              <h3 className="font-medium text-stone-900">Create Monthly Reviews</h3>
+            </div>
+          </div>
+          <p className="text-sm text-stone-600 mb-3">
+            You have months with entries that don't have reviews yet:
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {monthsNeedingReview.map((month) => (
+              <button
+                key={month}
+                onClick={() => {
+                  setSelectedMonthForReview(month);
+                  setShowMonthlyReviewModal(true);
+                }}
+                className="px-3 py-1.5 text-sm bg-white border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-100 transition-colors"
+              >
+                {format(parseISO(`${month}-01`), "MMMM yyyy")}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Monthly Review Modal */}
+      {showMonthlyReviewModal && selectedMonthForReview && (
+        <MonthlyReview
+          month={selectedMonthForReview}
+          onClose={() => {
+            setShowMonthlyReviewModal(false);
+            setSelectedMonthForReview(null);
+          }}
+          onSave={() => {
+            setShowMonthlyReviewModal(false);
+            setSelectedMonthForReview(null);
+            // Dispatch event to trigger re-render
+            window.dispatchEvent(new CustomEvent("monthlyReviewUpdated"));
+          }}
+        />
       )}
 
       {/* Filters Panel */}
@@ -337,102 +505,126 @@ export default function Archive() {
                 </span>
               </label>
             </div>
+
+            {/* Show Monthly Reviews */}
+            <div className="md:col-span-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showMonthlyReviews}
+                  onChange={(e) => setShowMonthlyReviews(e.target.checked)}
+                  className="rounded border-stone-300 text-stone-900 focus:ring-stone-500"
+                />
+                <span className="text-sm font-medium text-stone-700">
+                  Show monthly reviews
+                </span>
+              </label>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Entries */}
+      {/* Entries and Monthly Reviews */}
       <div className="space-y-6">
-        {filteredEntries.map((entry) => (
-          <div key={entry.id} className="bg-white border border-stone-200 rounded-xl p-6">
-            {/* Entry Header */}
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="font-medium text-stone-900">
-                  {formatDisplayDate(entry.date, entry.time)}
-                </h3>
-              </div>
+        {mergedItems.map((item) => {
+          if (item.type === 'monthlyReview') {
+            return (
+              <MonthlyReviewCard key={item.data.id} reflection={item.data} />
+            );
+          } else {
+            const entry = item.data;
+            return (
+              <div key={entry.id} className="bg-white border border-stone-200 rounded-xl p-6">
+                {/* Entry Header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-medium text-stone-900">
+                      {formatDisplayDate(entry.date, entry.time)}
+                    </h3>
+                  </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => startEditing(entry.id, entry.items)}
-                  className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
-                >
-                  <Edit3 size={16} />
-                </button>
-                <button
-                  onClick={() => handleDelete(entry.id, entry.date)}
-                  className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => startEditing(entry.id, entry.items)}
+                      className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
+                    >
+                      <Edit3 size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(entry.id, entry.date)}
+                      className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
 
-            {/* Entry Items */}
-            {editingId === entry.id ? (
-              <div className="space-y-4">
-                {editingItems.map((item, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium text-stone-700">
-                        {index + 1}.
-                      </label>
+                {/* Entry Items */}
+                {editingId === entry.id ? (
+                  <div className="space-y-4">
+                    {editingItems.map((item, index) => (
+                      <div key={index} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-medium text-stone-700">
+                            {index + 1}.
+                          </label>
+                          <button
+                            onClick={() => toggleEditFavorite(index)}
+                            className={`p-1 rounded transition-colors ${item.favorite ? "text-amber-500" : "text-stone-300 hover:text-amber-400"
+                              }`}
+                          >
+                            <Star size={16} fill={item.favorite ? "currentColor" : "none"} />
+                          </button>
+                        </div>
+                        <textarea
+                          value={item.text}
+                          onChange={(e) => handleEditChange(index, e.target.value)}
+                          className="w-full p-3 border border-stone-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-transparent"
+                          rows={2}
+                        />
+                      </div>
+                    ))}
+
+                    <div className="flex items-center gap-2 pt-2">
                       <button
-                        onClick={() => toggleEditFavorite(index)}
-                        className={`p-1 rounded transition-colors ${item.favorite ? "text-amber-500" : "text-stone-300 hover:text-amber-400"
-                          }`}
+                        onClick={() => saveEdit(entry.id, entry.date, entry.time)}
+                        className="px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm"
                       >
-                        <Star size={16} fill={item.favorite ? "currentColor" : "none"} />
+                        Save
+                      </button>
+                      <button
+                        onClick={cancelEditing}
+                        className="px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors text-sm"
+                      >
+                        Cancel
                       </button>
                     </div>
-                    <textarea
-                      value={item.text}
-                      onChange={(e) => handleEditChange(index, e.target.value)}
-                      className="w-full p-3 border border-stone-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-transparent"
-                      rows={2}
-                    />
                   </div>
-                ))}
-
-                <div className="flex items-center gap-2 pt-2">
-                  <button
-                    onClick={() => saveEdit(entry.id, entry.date, entry.time)}
-                    className="px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={cancelEditing}
-                    className="px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors text-sm"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {entry.items.map((item, index) => (
-                  <div
-                    key={index}
-                    className={`p-3 rounded-lg ${item.favorite ? "bg-amber-50 border border-amber-200" : "bg-stone-50"
-                      }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-stone-900 flex-1">{item.text}</p>
-                      {item.favorite && (
-                        <Star size={16} className="text-amber-500 mt-0.5 flex-shrink-0" fill="currentColor" />
-                      )}
-                    </div>
+                ) : (
+                  <div className="space-y-3">
+                    {entry.items.map((item, index) => (
+                      <div
+                        key={index}
+                        className={`p-3 rounded-lg ${item.favorite ? "bg-amber-50 border border-amber-200" : "bg-stone-50"
+                          }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="text-stone-900 flex-1">{item.text}</p>
+                          {item.favorite && (
+                            <Star size={16} className="text-amber-500 mt-0.5 flex-shrink-0" fill="currentColor" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
-        ))}
+            );
+          }
+        })}
       </div>
 
-      {filteredEntries.length === 0 && entries.length > 0 && (
+      {mergedItems.length === 0 && entries.length > 0 && (
         <div className="text-center py-12">
           <p className="text-stone-600 mb-4">No reflections match your current filters</p>
           <button

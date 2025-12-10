@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { format, subDays } from "date-fns";
+import { format, subDays, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 
 export type EntryItem = {
   text: string;
@@ -13,7 +13,16 @@ export type Entry = {
   items: [EntryItem, EntryItem, EntryItem];
 };
 
+export type MonthlyReflection = {
+  id: string;
+  month: string; // Format: "2024-01"
+  selectedFavorites: string[]; // Array of entry IDs (up to 5)
+  reflectionText: string;
+  createdAt: string; // ISO date string
+};
+
 const STORAGE_KEY = "three-things-entries";
+const MONTHLY_REFLECTIONS_KEY = "three-things-monthly-reflections";
 
 // Fake data for testing
 const generateFakeData = (): Entry[] => {
@@ -76,6 +85,8 @@ const generateFakeData = (): Entry[] => {
 
 export function useEntries() {
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [monthlyReflections, setMonthlyReflections] = useState<MonthlyReflection[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Load entries from localStorage on mount
   useEffect(() => {
@@ -93,6 +104,33 @@ export function useEntries() {
         console.error("Failed to parse entries from localStorage:", error);
       }
     }
+    setIsLoading(false);
+  }, []);
+
+  // Load monthly reflections from localStorage on mount
+  const loadMonthlyReflections = () => {
+    const stored = localStorage.getItem(MONTHLY_REFLECTIONS_KEY);
+    if (stored) {
+      try {
+        const parsedReflections = JSON.parse(stored);
+        setMonthlyReflections(parsedReflections);
+      } catch (error) {
+        console.error("Failed to parse monthly reflections from localStorage:", error);
+      }
+    } else {
+      setMonthlyReflections([]);
+    }
+  };
+
+  useEffect(() => {
+    loadMonthlyReflections();
+    
+    // Listen for custom event to reload monthly reflections
+    const handleReload = () => {
+      loadMonthlyReflections();
+    };
+    window.addEventListener("reloadMonthlyReflections", handleReload);
+    return () => window.removeEventListener("reloadMonthlyReflections", handleReload);
   }, []);
 
   const saveEntry = (entry: Omit<Entry, 'id'>) => {
@@ -165,6 +203,118 @@ export function useEntries() {
     return newEntries.length; // Return count of newly imported entries
   };
 
+  // Monthly Reflection functions
+  const saveMonthlyReflection = (reflection: Omit<MonthlyReflection, 'id' | 'createdAt'>) => {
+    const newReflection: MonthlyReflection = {
+      ...reflection,
+      id: `monthly-${reflection.month}-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    };
+    
+    // Check if reflection for this month already exists
+    const existingIndex = monthlyReflections.findIndex(r => r.month === reflection.month);
+    let updatedReflections: MonthlyReflection[];
+    
+    if (existingIndex >= 0) {
+      // Update existing reflection
+      updatedReflections = [...monthlyReflections];
+      updatedReflections[existingIndex] = { ...newReflection, id: monthlyReflections[existingIndex].id, createdAt: monthlyReflections[existingIndex].createdAt };
+    } else {
+      // Add new reflection
+      updatedReflections = [...monthlyReflections, newReflection];
+    }
+    
+    setMonthlyReflections(updatedReflections);
+    localStorage.setItem(MONTHLY_REFLECTIONS_KEY, JSON.stringify(updatedReflections));
+  };
+
+  const updateMonthlyReflection = (id: string, updates: Partial<Omit<MonthlyReflection, 'id' | 'createdAt'>>) => {
+    const updatedReflections = monthlyReflections.map(reflection =>
+      reflection.id === id ? { ...reflection, ...updates } : reflection
+    );
+    setMonthlyReflections(updatedReflections);
+    localStorage.setItem(MONTHLY_REFLECTIONS_KEY, JSON.stringify(updatedReflections));
+  };
+
+  const getMonthlyReflection = (month: string) => {
+    return monthlyReflections.find(r => r.month === month);
+  };
+
+  const getEntriesForMonth = (month: string) => {
+    const monthDate = parseISO(`${month}-01`);
+    const monthStart = startOfMonth(monthDate);
+    const monthEnd = endOfMonth(monthDate);
+    
+    return entries.filter(entry => {
+      const entryDate = parseISO(entry.date);
+      return isWithinInterval(entryDate, { start: monthStart, end: monthEnd });
+    });
+  };
+
+  const getStarredItemsForMonth = (month: string) => {
+    const monthEntries = getEntriesForMonth(month);
+    const starredItems: Array<{ entryId: string; itemIndex: number; text: string }> = [];
+    
+    monthEntries.forEach(entry => {
+      entry.items.forEach((item, index) => {
+        if (item.favorite) {
+          starredItems.push({
+            entryId: entry.id,
+            itemIndex: index,
+            text: item.text,
+          });
+        }
+      });
+    });
+    
+    return starredItems;
+  };
+
+  const shouldShowMonthlyReviewPrompt = () => {
+    const today = new Date();
+    const isFirstOfMonth = today.getDate() === 1;
+    
+    // Only show on the 1st of the month
+    if (!isFirstOfMonth) return false;
+    
+    const previousMonth = format(subDays(today, 1), "yyyy-MM");
+    const hasReflection = monthlyReflections.some(r => r.month === previousMonth);
+    const hasEntries = getEntriesForMonth(previousMonth).length > 0;
+    
+    return !hasReflection && hasEntries;
+  };
+
+  // Get months that have entries but no reflection yet
+  const getMonthsNeedingReview = () => {
+    const today = new Date();
+    const currentMonth = format(today, "yyyy-MM");
+    
+    const monthsWithEntries = new Set<string>();
+    entries.forEach(entry => {
+      const month = format(parseISO(entry.date), "yyyy-MM");
+      monthsWithEntries.add(month);
+    });
+
+    const monthsNeedingReview: string[] = [];
+    monthsWithEntries.forEach(month => {
+      // Only include months that have ended (not the current month or future months)
+      // String comparison works for yyyy-MM format: "2025-11" < "2025-12" < "2026-01"
+      if (month >= currentMonth) return;
+      
+      const hasReflection = monthlyReflections.some(r => r.month === month);
+      if (!hasReflection) {
+        monthsNeedingReview.push(month);
+      }
+    });
+
+    // Sort newest first
+    return monthsNeedingReview.sort((a, b) => b.localeCompare(a));
+  };
+
+  const getPreviousMonth = () => {
+    return format(subDays(new Date(), 1), "yyyy-MM");
+  };
+
   return {
     entries,
     saveEntry,
@@ -176,5 +326,17 @@ export function useEntries() {
     getYesterdayEntry,
     addFakeData,
     importEntries,
+    // Monthly reflection functions
+    monthlyReflections,
+    saveMonthlyReflection,
+    updateMonthlyReflection,
+    getMonthlyReflection,
+    getEntriesForMonth,
+    getStarredItemsForMonth,
+    shouldShowMonthlyReviewPrompt,
+    getPreviousMonth,
+    getMonthsNeedingReview,
+    // Loading state
+    isLoading,
   };
 }

@@ -1,15 +1,16 @@
-import { useState } from "react";
-import { format } from "date-fns";
+import { useState, useEffect } from "react";
+import { format, parseISO } from "date-fns";
 import { useEntries } from "../hooks/useEntries";
 import type { EntryItem } from "../hooks/useEntries";
 import { Link } from "react-router-dom";
-import { Star, BookOpen, TrendingUp, ArrowRight, Check } from "lucide-react";
+import { Star, BookOpen, TrendingUp, ArrowRight, Check, Calendar, X } from "lucide-react";
 import LocalStorageNotice from "./LocalStorageNotice";
+import MonthlyReview from "./MonthlyReview";
 
 const placeholders = [
   "Something you're grateful for today...",
   "A moment of joy or satisfaction you experienced...",
-  "Progress you made or something positive that happened..."
+  "Progress you made or something positive that happened...",
 ];
 
 const completionMessages = [
@@ -17,23 +18,57 @@ const completionMessages = [
   "Today's reflections captured. See you tomorrow for another practice.",
   "Gratitude noted. These moments of appreciation matter.",
   "Your daily reflection is complete. Well done on practicing gratitude.",
-  "Another day of mindful gratitude recorded. This practice builds over time."
+  "Another day of mindful gratitude recorded. This practice builds over time.",
 ];
 
 export default function EntryInput() {
-  const { entries, saveEntry, hasTodayEntry } = useEntries();
-  const [items, setItems] = useState<EntryItem[]>([
-    { text: "" },
-    { text: "" },
-    { text: "" },
-  ]);
+  const {
+    entries,
+    saveEntry,
+    hasTodayEntry,
+    shouldShowMonthlyReviewPrompt,
+    getPreviousMonth,
+  } = useEntries();
+  const [items, setItems] = useState<EntryItem[]>([{ text: "" }, { text: "" }, { text: "" }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [showMonthlyReviewPrompt, setShowMonthlyReviewPrompt] = useState(false);
+  const [showMonthlyReviewModal, setShowMonthlyReviewModal] = useState(false);
+  const [selectedMonthForReview, setSelectedMonthForReview] = useState<string | null>(null);
+  const [dismissedPromptMonth, setDismissedPromptMonth] = useState<string | null>(() => {
+    const stored = localStorage.getItem("three-things-dismissed-month");
+    return stored || null;
+  });
+
+  // Check if we should show monthly review prompt
+  useEffect(() => {
+    const shouldShow = shouldShowMonthlyReviewPrompt();
+    if (shouldShow) {
+      const previousMonth = getPreviousMonth();
+      if (dismissedPromptMonth !== previousMonth) {
+        setShowMonthlyReviewPrompt(true);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dismissedPromptMonth]);
+
+  // Listen for monthly review updates
+  useEffect(() => {
+    const handleUpdate = () => {
+      setShowMonthlyReviewModal(false);
+      setShowMonthlyReviewPrompt(false);
+      window.dispatchEvent(new CustomEvent("reloadMonthlyReflections"));
+    };
+    window.addEventListener("monthlyReviewUpdated", handleUpdate);
+    return () => window.removeEventListener("monthlyReviewUpdated", handleUpdate);
+  }, []);
 
   // Pick a message based on today's date (static for the day)
   const getTodayMessage = () => {
     const today = new Date();
-    const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
+    const dayOfYear = Math.floor(
+      (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24)
+    );
     return completionMessages[dayOfYear % completionMessages.length];
   };
 
@@ -63,7 +98,7 @@ export default function EntryInput() {
     saveEntry(entryData);
 
     // Dispatch custom event to notify Layout of the change
-    window.dispatchEvent(new CustomEvent('entryAdded'));
+    window.dispatchEvent(new CustomEvent("entryAdded"));
 
     // Show success animation
     setTimeout(() => {
@@ -78,7 +113,7 @@ export default function EntryInput() {
   };
 
   // Check how many fields are filled
-  const filledCount = items.filter(item => item.text.trim().length > 0).length;
+  const filledCount = items.filter((item) => item.text.trim().length > 0).length;
   const isFormValid = filledCount === 3;
 
   // Success Animation Component
@@ -92,7 +127,10 @@ export default function EntryInput() {
               {/* Animated Checkmark */}
               <div className="relative mb-8">
                 <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto animate-[bounce_0.6s_ease-in-out] shadow-lg">
-                  <Check size={48} className="text-white animate-[fadeIn_0.8s_ease-in-out_0.3s_both]" />
+                  <Check
+                    size={48}
+                    className="text-white animate-[fadeIn_0.8s_ease-in-out_0.3s_both]"
+                  />
                 </div>
                 {/* Ripple effect */}
                 <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-24 h-24 bg-green-200 rounded-full animate-[ping_1s_cubic-bezier(0,0,0.2,1)_0.2s]"></div>
@@ -101,12 +139,8 @@ export default function EntryInput() {
 
               {/* Success Message */}
               <div className="animate-[fadeInUp_0.8s_ease-out_0.5s_both]">
-                <h2 className="text-2xl font-medium text-stone-900 mb-3">
-                  Gratitude Saved! ✨
-                </h2>
-                <p className="text-stone-600 text-lg">
-                  Your three good things have been recorded
-                </p>
+                <h2 className="text-2xl font-medium text-stone-900 mb-3">Gratitude Saved! ✨</h2>
+                <p className="text-stone-600 text-lg">Your three good things have been recorded</p>
               </div>
             </div>
           </div>
@@ -123,12 +157,8 @@ export default function EntryInput() {
             <div className="w-8 h-8 bg-green-500 rounded-full"></div>
           </div>
 
-          <h2 className="text-xl font-medium text-stone-900 mb-2">
-            Today's gratitude recorded
-          </h2>
-          <p className="text-stone-600 mb-8">
-            {getTodayMessage()}
-          </p>
+          <h2 className="text-xl font-medium text-stone-900 mb-2">Today's gratitude recorded</h2>
+          <p className="text-stone-600 mb-8">{getTodayMessage()}</p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
@@ -149,9 +179,7 @@ export default function EntryInput() {
             </Link>
           </div>
 
-          <p className="text-sm text-stone-500 mt-6">
-            Come back tomorrow for another reflection
-          </p>
+          <p className="text-sm text-stone-500 mt-6">Come back tomorrow for another reflection</p>
         </div>
       </div>
     );
@@ -159,50 +187,102 @@ export default function EntryInput() {
 
   return (
     <div className="max-w-2xl mx-auto min-h-[calc(100vh-200px)] flex flex-col justify-center">
+      {/* Monthly Review Prompt Banner */}
+      {showMonthlyReviewPrompt && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Calendar size={20} className="text-blue-600" />
+            <div>
+              <h3 className="font-medium text-stone-900">Review your {format(parseISO(`${getPreviousMonth()}-01`), "MMMM")}</h3>
+              <p className="text-sm text-stone-600">Take a moment to reflect on last month and select your favorite moments</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setSelectedMonthForReview(getPreviousMonth());
+                setShowMonthlyReviewModal(true);
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            >
+              Review Now
+            </button>
+            <button
+              onClick={() => {
+                const month = getPreviousMonth();
+                setShowMonthlyReviewPrompt(false);
+                setDismissedPromptMonth(month);
+                localStorage.setItem("three-things-dismissed-month", month);
+              }}
+              className="p-2 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-blue-100"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Monthly Review Modal */}
+      {showMonthlyReviewModal && selectedMonthForReview && (
+        <MonthlyReview
+          month={selectedMonthForReview}
+          onClose={() => {
+            setShowMonthlyReviewModal(false);
+            setSelectedMonthForReview(null);
+          }}
+          onSave={() => {
+            setShowMonthlyReviewModal(false);
+            setShowMonthlyReviewPrompt(false);
+            setSelectedMonthForReview(null);
+            setDismissedPromptMonth(null);
+            localStorage.removeItem("three-things-dismissed-month");
+            window.dispatchEvent(new CustomEvent("monthlyReviewUpdated"));
+          }}
+        />
+      )}
+
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-2xl font-medium text-stone-900 mb-2">
           What are you grateful for today?
         </h1>
-        <p className="text-stone-600 mb-1">
-          Take a moment to notice what you appreciate
-        </p>
-        <p className="text-sm text-stone-500">
-          {format(new Date(), 'EEEE, MMMM d, yyyy')}
-        </p>
+        <p className="text-stone-600 mb-1">Take a moment to notice what you appreciate</p>
+        <p className="text-sm text-stone-500">{format(new Date(), "EEEE, MMMM d, yyyy")}</p>
       </div>
 
       {/* Form */}
-      <div className={`space-y-6 transition-all duration-300 ${isSubmitting ? 'opacity-50 scale-95' : ''}`}>
+      <div
+        className={`space-y-6 transition-all duration-300 ${
+          isSubmitting ? "opacity-50 scale-95" : ""
+        }`}
+      >
         {items.map((item, i) => (
           <div key={i} className="group">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-stone-700">
-                Good thing {i + 1}
-              </label>
+              <label className="text-sm font-medium text-stone-700">Good thing {i + 1}</label>
               <button
                 onClick={() => toggleFavorite(i)}
                 className={`
                   p-1 rounded transition-colors
-                  ${item.favorite
-                    ? "text-amber-500"
-                    : "text-stone-300 hover:text-amber-400"
-                  }
+                  ${item.favorite ? "text-amber-500" : "text-stone-300 hover:text-amber-400"}
                 `}
               >
                 <Star size={16} fill={item.favorite ? "currentColor" : "none"} />
               </button>
             </div>
 
-            <div className={`
+            <div
+              className={`
               border rounded-xl transition-all duration-200
-              ${item.favorite
-                ? 'border-amber-200 bg-amber-50'
-                : item.text.trim()
-                  ? 'border-stone-300 bg-white'
-                  : 'border-stone-200 bg-stone-50 group-hover:border-stone-300'
+              ${
+                item.favorite
+                  ? "border-amber-200 bg-amber-50"
+                  : item.text.trim()
+                  ? "border-stone-300 bg-white"
+                  : "border-stone-200 bg-stone-50 group-hover:border-stone-300"
               }
-            `}>
+            `}
+            >
               <textarea
                 value={item.text}
                 onChange={(e) => handleChange(i, e.target.value)}
@@ -227,24 +307,24 @@ export default function EntryInput() {
             disabled={!isFormValid || isSubmitting}
             className={`
               w-full py-3 px-4 rounded-xl font-medium transition-all duration-200
-              ${isFormValid && !isSubmitting
-                ? "bg-stone-900 text-white hover:bg-stone-800 hover:scale-105"
-                : "bg-stone-100 text-stone-400 cursor-not-allowed"
+              ${
+                isFormValid && !isSubmitting
+                  ? "bg-stone-900 text-white hover:bg-stone-800 hover:scale-105"
+                  : "bg-stone-100 text-stone-400 cursor-not-allowed"
               }
               ${isSubmitting ? "animate-pulse" : ""}
             `}
           >
-            {isSubmitting
-              ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Saving your gratitude...
-                </span>
-              )
-              : isFormValid
-                ? "Save Today's Gratitude"
-                : `${3 - filledCount} more to complete`
-            }
+            {isSubmitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Saving your gratitude...
+              </span>
+            ) : isFormValid ? (
+              "Save Today's Gratitude"
+            ) : (
+              `${3 - filledCount} more to complete`
+            )}
           </button>
         </div>
       </div>
