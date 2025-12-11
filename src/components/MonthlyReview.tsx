@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import { useEntries } from "../hooks/useEntries";
 import { Star, X, Check } from "lucide-react";

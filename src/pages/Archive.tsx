@@ -16,7 +16,6 @@ export default function Archive() {
     importMonthlyReflections,
     importYearlyReviews,
     monthlyReflections,
-    getMonthsNeedingReview,
     isLoading,
   } = useEntries();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -628,7 +627,7 @@ export default function Archive() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {entry.items.map((item, index) => (
+                    {entry.items.map((item: EntryItem, index: number) => (
                       <div
                         key={index}
                         className={`p-3 rounded-lg ${item.favorite ? "bg-amber-50 border border-amber-200" : "bg-stone-50"
