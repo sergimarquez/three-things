@@ -6,7 +6,10 @@ import { Link } from "react-router-dom";
 
 export default function Progress() {
   const { entries, getYearsWithEntries } = useEntries();
-  const yearsWithEntries = getYearsWithEntries();
+  const allYearsWithEntries = getYearsWithEntries();
+  const currentYear = new Date().getFullYear();
+  // Only show button if there's at least one completed year (not the current year)
+  const completedYears = allYearsWithEntries.filter(year => Number(year) < currentYear);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
   // Calculate streak
@@ -142,7 +145,7 @@ export default function Progress() {
             Your reflection practice over time
           </p>
         </div>
-        {yearsWithEntries.length > 0 && (
+        {completedYears.length > 0 && (
           <Link
             to="/year-review"
             className="inline-flex items-center gap-2 px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors text-sm font-medium"
