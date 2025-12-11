@@ -134,11 +134,20 @@ export default function Progress() {
   return (
     <div className="max-w-4xl mx-auto animate-[fadeIn_0.3s_ease-out]">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-medium text-stone-900 mb-2">Progress</h1>
-        <p className="text-stone-600">
-          Your reflection practice over time
-        </p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-medium text-stone-900 mb-2">Progress</h1>
+          <p className="text-stone-600">
+            Your reflection practice over time
+          </p>
+        </div>
+        <Link
+          to="/year-review"
+          className="inline-flex items-center gap-2 px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors text-sm font-medium"
+        >
+          <Calendar size={16} />
+          Year in Review
+        </Link>
       </div>
 
       {/* Key Metrics */}

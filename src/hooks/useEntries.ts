@@ -21,8 +21,16 @@ export type MonthlyReflection = {
   createdAt: string; // ISO date string
 };
 
+export type YearlyReview = {
+  id: string;
+  year: string; // Format: "2024"
+  reflectionText: string;
+  createdAt: string;
+};
+
 const STORAGE_KEY = "three-things-entries";
 const MONTHLY_REFLECTIONS_KEY = "three-things-monthly-reflections";
+const YEARLY_REVIEWS_KEY = "three-things-yearly-reviews";
 
 // Fake data for testing
 const generateFakeData = (): Entry[] => {
@@ -86,6 +94,7 @@ const generateFakeData = (): Entry[] => {
 export function useEntries() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [monthlyReflections, setMonthlyReflections] = useState<MonthlyReflection[]>([]);
+  const [yearlyReviews, setYearlyReviews] = useState<YearlyReview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load entries from localStorage on mount
@@ -122,12 +131,28 @@ export function useEntries() {
     }
   };
 
+  const loadYearlyReviews = () => {
+    const stored = localStorage.getItem(YEARLY_REVIEWS_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setYearlyReviews(parsed);
+      } catch (error) {
+        console.error("Failed to parse yearly reviews from localStorage:", error);
+      }
+    } else {
+      setYearlyReviews([]);
+    }
+  };
+
   useEffect(() => {
     loadMonthlyReflections();
+    loadYearlyReviews();
     
     // Listen for custom event to reload monthly reflections
     const handleReload = () => {
       loadMonthlyReflections();
+      loadYearlyReviews();
     };
     window.addEventListener("reloadMonthlyReflections", handleReload);
     return () => window.removeEventListener("reloadMonthlyReflections", handleReload);
@@ -228,6 +253,142 @@ export function useEntries() {
     localStorage.setItem(MONTHLY_REFLECTIONS_KEY, JSON.stringify(updatedReflections));
   };
 
+  // Yearly Review functions
+  const saveYearlyReview = (review: Omit<YearlyReview, 'id' | 'createdAt'>) => {
+    const newReview: YearlyReview = {
+      ...review,
+      id: `yearly-${review.year}-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    };
+
+    const existingIndex = yearlyReviews.findIndex(r => r.year === review.year);
+    let updatedReviews: YearlyReview[];
+
+    if (existingIndex >= 0) {
+      updatedReviews = [...yearlyReviews];
+      updatedReviews[existingIndex] = { ...newReview, id: yearlyReviews[existingIndex].id, createdAt: yearlyReviews[existingIndex].createdAt };
+    } else {
+      updatedReviews = [...yearlyReviews, newReview];
+    }
+
+    setYearlyReviews(updatedReviews);
+    localStorage.setItem(YEARLY_REVIEWS_KEY, JSON.stringify(updatedReviews));
+  };
+
+  const getYearlyReview = (year: string) => {
+    return yearlyReviews.find(r => r.year === year);
+  };
+
+  const getYearsWithEntries = () => {
+    const years = new Set<string>();
+    entries.forEach(entry => {
+      const year = format(parseISO(entry.date), "yyyy");
+      years.add(year);
+    });
+    return Array.from(years).sort((a, b) => b.localeCompare(a));
+  };
+
+  const getYearEntries = (year: string) => {
+    return entries.filter(entry => format(parseISO(entry.date), "yyyy") === year);
+  };
+
+  const getYearStarredItems = (year: string) => {
+    const yearEntries = getYearEntries(year);
+    const starredItems: Array<{ entryId: string; itemIndex: number; text: string; date: string }> = [];
+    yearEntries.forEach(entry => {
+      entry.items.forEach((item, index) => {
+        if (item.favorite) {
+          starredItems.push({
+            entryId: entry.id,
+            itemIndex: index,
+            text: item.text,
+            date: entry.date,
+          });
+        }
+      });
+    });
+    return starredItems;
+  };
+
+  const getMonthlyFavoritesForYear = (year: string) => {
+    // Collect favorites from monthly reflections of that year
+    const favorites: Array<{ entryId: string; itemIndex: number; text: string; date: string; month: string }> = [];
+
+    monthlyReflections
+      .filter(r => r.month.startsWith(year))
+      .forEach(reflection => {
+        reflection.selectedFavorites.forEach(key => {
+          const lastDashIndex = key.lastIndexOf("-");
+          if (lastDashIndex === -1) return;
+          const entryId = key.substring(0, lastDashIndex);
+          const itemIndex = parseInt(key.substring(lastDashIndex + 1));
+          if (isNaN(itemIndex)) return;
+          const entry = entries.find(e => e.id === entryId);
+          if (entry && entry.items[itemIndex]) {
+            favorites.push({
+              entryId,
+              itemIndex,
+              text: entry.items[itemIndex].text,
+              date: entry.date,
+              month: reflection.month,
+            });
+          }
+        });
+      });
+
+    return favorites;
+  };
+
+  const getYearSummary = (year: string) => {
+    const yearEntries = getYearEntries(year);
+    const uniqueDays = new Set(yearEntries.map(e => e.date));
+    const starredItems = getYearStarredItems(year);
+    const monthlyFavorites = getMonthlyFavoritesForYear(year);
+
+    // Prefer monthly favorites; fallback to starred items
+    const topMoments = monthlyFavorites.length > 0 ? monthlyFavorites : starredItems;
+
+    // Longest streak within the year
+    const sortedDates = Array.from(uniqueDays).sort();
+    let longestStreak = 0;
+    let currentStreak = 0;
+    let prevDate: Date | null = null;
+    sortedDates.forEach(dateStr => {
+      const d = parseISO(dateStr);
+      if (prevDate) {
+        const diff = (d.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24);
+        if (diff === 1) {
+          currentStreak += 1;
+        } else {
+          currentStreak = 1;
+        }
+      } else {
+        currentStreak = 1;
+      }
+      longestStreak = Math.max(longestStreak, currentStreak);
+      prevDate = d;
+    });
+
+    // Consistency: days practiced / days passed in the year (or total days if past year)
+    const yearStart = new Date(Number(year), 0, 1);
+    const yearEnd = new Date(Number(year), 11, 31);
+    const today = new Date();
+    const effectiveEnd = today.getFullYear() === Number(year) ? today : yearEnd;
+    const daysInRange = Math.floor((effectiveEnd.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const consistency = daysInRange > 0 ? Math.round((uniqueDays.size / daysInRange) * 100) : 0;
+
+    return {
+      year,
+      daysPracticed: yearEntries.length,
+      totalReflections: yearEntries.length,
+      totalItems: yearEntries.length * 3,
+      starredCount: starredItems.length,
+      longestStreak,
+      consistency,
+      topMoments,
+    };
+  };
+
   const updateMonthlyReflection = (id: string, updates: Partial<Omit<MonthlyReflection, 'id' | 'createdAt'>>) => {
     const updatedReflections = monthlyReflections.map(reflection =>
       reflection.id === id ? { ...reflection, ...updates } : reflection
@@ -284,6 +445,18 @@ export function useEntries() {
     return !hasReflection && hasEntries;
   };
 
+  const shouldShowYearlyReviewPrompt = () => {
+    const today = new Date();
+    const isJanFirst = today.getMonth() === 0 && today.getDate() === 1; // January is month 0
+    if (!isJanFirst) return false;
+
+    const previousYear = String(today.getFullYear() - 1);
+    const hasReview = yearlyReviews.some(r => r.year === previousYear);
+    const hasEntries = getYearEntries(previousYear).length > 0;
+
+    return !hasReview && hasEntries;
+  };
+
   // Get months that have entries but no reflection yet
   const getMonthsNeedingReview = () => {
     const today = new Date();
@@ -334,8 +507,17 @@ export function useEntries() {
     getEntriesForMonth,
     getStarredItemsForMonth,
     shouldShowMonthlyReviewPrompt,
+    shouldShowYearlyReviewPrompt,
     getPreviousMonth,
     getMonthsNeedingReview,
+    yearlyReviews,
+    saveYearlyReview,
+    getYearlyReview,
+    getYearsWithEntries,
+    getYearEntries,
+    getYearStarredItems,
+    getMonthlyFavoritesForYear,
+    getYearSummary,
     // Loading state
     isLoading,
   };

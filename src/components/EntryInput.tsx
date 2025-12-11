@@ -27,6 +27,7 @@ export default function EntryInput() {
     saveEntry,
     hasTodayEntry,
     shouldShowMonthlyReviewPrompt,
+    shouldShowYearlyReviewPrompt,
     getPreviousMonth,
   } = useEntries();
   const [items, setItems] = useState<EntryItem[]>([{ text: "" }, { text: "" }, { text: "" }]);
@@ -37,6 +38,11 @@ export default function EntryInput() {
   const [selectedMonthForReview, setSelectedMonthForReview] = useState<string | null>(null);
   const [dismissedPromptMonth, setDismissedPromptMonth] = useState<string | null>(() => {
     const stored = localStorage.getItem("three-things-dismissed-month");
+    return stored || null;
+  });
+  const [showYearlyReviewBanner, setShowYearlyReviewBanner] = useState(false);
+  const [dismissedYearBanner, setDismissedYearBanner] = useState<string | null>(() => {
+    const stored = localStorage.getItem("three-things-dismissed-year");
     return stored || null;
   });
 
@@ -51,6 +57,18 @@ export default function EntryInput() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dismissedPromptMonth]);
+
+  // Check if we should show yearly review banner (Jan 1)
+  useEffect(() => {
+    const shouldShow = shouldShowYearlyReviewPrompt();
+    if (shouldShow) {
+      const previousYear = String(new Date().getFullYear() - 1);
+      if (dismissedYearBanner !== previousYear) {
+        setShowYearlyReviewBanner(true);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dismissedYearBanner]);
 
   // Listen for monthly review updates
   useEffect(() => {
@@ -187,6 +205,38 @@ export default function EntryInput() {
 
   return (
     <div className="max-w-2xl mx-auto min-h-[calc(100vh-200px)] flex flex-col justify-center">
+      {/* Yearly Review Banner */}
+      {showYearlyReviewBanner && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Calendar size={20} className="text-blue-600" />
+            <div>
+              <h3 className="font-medium text-stone-900">Your Year in Review is ready</h3>
+              <p className="text-sm text-stone-600">Look back at last year's highlights and favorite moments</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/year-review"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            >
+              View Year Review
+            </Link>
+            <button
+              onClick={() => {
+                const year = String(new Date().getFullYear() - 1);
+                setShowYearlyReviewBanner(false);
+                setDismissedYearBanner(year);
+                localStorage.setItem("three-things-dismissed-year", year);
+              }}
+              className="p-2 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-blue-100"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Monthly Review Prompt Banner */}
       {showMonthlyReviewPrompt && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
