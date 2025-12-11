@@ -5,7 +5,8 @@ import { TrendingUp, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function Progress() {
-  const { entries } = useEntries();
+  const { entries, getYearsWithEntries } = useEntries();
+  const yearsWithEntries = getYearsWithEntries();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
   // Calculate streak
@@ -141,13 +142,15 @@ export default function Progress() {
             Your reflection practice over time
           </p>
         </div>
-        <Link
-          to="/year-review"
-          className="inline-flex items-center gap-2 px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors text-sm font-medium"
-        >
-          <Calendar size={16} />
-          Year in Review
-        </Link>
+        {yearsWithEntries.length > 0 && (
+          <Link
+            to="/year-review"
+            className="inline-flex items-center gap-2 px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors text-sm font-medium"
+          >
+            <Calendar size={16} />
+            Year in Review
+          </Link>
+        )}
       </div>
 
       {/* Key Metrics */}

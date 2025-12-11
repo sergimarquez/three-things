@@ -228,6 +228,38 @@ export function useEntries() {
     return newEntries.length; // Return count of newly imported entries
   };
 
+  const importMonthlyReflections = (importedReflections: MonthlyReflection[]) => {
+    // Filter out duplicates based on month
+    const existingMonths = new Set(monthlyReflections.map(r => r.month));
+    const newReflections = importedReflections.filter(reflection => 
+      !existingMonths.has(reflection.month)
+    );
+    
+    // Combine with existing reflections
+    const combinedReflections = [...monthlyReflections, ...newReflections];
+    
+    setMonthlyReflections(combinedReflections);
+    localStorage.setItem(MONTHLY_REFLECTIONS_KEY, JSON.stringify(combinedReflections));
+    
+    return newReflections.length;
+  };
+
+  const importYearlyReviews = (importedReviews: YearlyReview[]) => {
+    // Filter out duplicates based on year
+    const existingYears = new Set(yearlyReviews.map(r => r.year));
+    const newReviews = importedReviews.filter(review => 
+      !existingYears.has(review.year)
+    );
+    
+    // Combine with existing reviews
+    const combinedReviews = [...yearlyReviews, ...newReviews];
+    
+    setYearlyReviews(combinedReviews);
+    localStorage.setItem(YEARLY_REVIEWS_KEY, JSON.stringify(combinedReviews));
+    
+    return newReviews.length;
+  };
+
   // Monthly Reflection functions
   const saveMonthlyReflection = (reflection: Omit<MonthlyReflection, 'id' | 'createdAt'>) => {
     const newReflection: MonthlyReflection = {
@@ -499,6 +531,8 @@ export function useEntries() {
     getYesterdayEntry,
     addFakeData,
     importEntries,
+    importMonthlyReflections,
+    importYearlyReviews,
     // Monthly reflection functions
     monthlyReflections,
     saveMonthlyReflection,

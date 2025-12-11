@@ -13,6 +13,8 @@ export default function Archive() {
     deleteEntry,
     addFakeData,
     importEntries,
+    importMonthlyReflections,
+    importYearlyReviews,
     monthlyReflections,
     getMonthsNeedingReview,
     isLoading,
@@ -198,17 +200,41 @@ export default function Archive() {
         }
 
         // Import the entries
-        const importedCount = importEntries(data.entries);
+        const importedEntriesCount = importEntries(data.entries);
+        
+        // Import monthly reflections if they exist (backward compatible)
+        let importedMonthlyCount = 0;
+        if (data.monthlyReflections && Array.isArray(data.monthlyReflections)) {
+          importedMonthlyCount = importMonthlyReflections(data.monthlyReflections);
+        }
+        
+        // Import yearly reviews if they exist (backward compatible)
+        let importedYearlyCount = 0;
+        if (data.yearlyReviews && Array.isArray(data.yearlyReviews)) {
+          importedYearlyCount = importYearlyReviews(data.yearlyReviews);
+        }
 
-        if (importedCount > 0) {
+        // Build success message
+        const parts: string[] = [];
+        if (importedEntriesCount > 0) {
+          parts.push(`${importedEntriesCount} ${importedEntriesCount === 1 ? 'reflection' : 'reflections'}`);
+        }
+        if (importedMonthlyCount > 0) {
+          parts.push(`${importedMonthlyCount} ${importedMonthlyCount === 1 ? 'monthly review' : 'monthly reviews'}`);
+        }
+        if (importedYearlyCount > 0) {
+          parts.push(`${importedYearlyCount} ${importedYearlyCount === 1 ? 'yearly review' : 'yearly reviews'}`);
+        }
+
+        if (parts.length > 0) {
           setImportStatus({
             type: 'success',
-            message: `Successfully imported ${importedCount} new ${importedCount === 1 ? 'reflection' : 'reflections'}`
+            message: `Successfully imported ${parts.join(', ')}`
           });
         } else {
           setImportStatus({
             type: 'success',
-            message: 'No new reflections to import (all entries already exist)'
+            message: 'No new data to import (all items already exist)'
           });
         }
 

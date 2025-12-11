@@ -44,4 +44,4 @@ export default function LocalStorageNotice({ entriesCount }: { entriesCount: num
       </div>
     </div>
   );
-}
+} 

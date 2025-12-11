@@ -5,7 +5,7 @@ import { Download, FileText, Table, File, FileCode } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function Export() {
-  const { entries } = useEntries();
+  const { entries, monthlyReflections, yearlyReviews } = useEntries();
   const [isExporting, setIsExporting] = useState(false);
   const [exportFormat, setExportFormat] = useState<'json' | 'csv' | 'txt' | 'markdown'>('json');
 
@@ -25,6 +25,8 @@ export default function Export() {
     const exportData = {
       exportDate: new Date().toISOString(),
       totalEntries: entries.length,
+      totalMonthlyReflections: monthlyReflections.length,
+      totalYearlyReviews: yearlyReviews.length,
       entries: entries.map(entry => ({
         id: entry.id,
         date: entry.date,
@@ -33,6 +35,19 @@ export default function Export() {
           text: item.text,
           favorite: item.favorite || false
         }))
+      })),
+      monthlyReflections: monthlyReflections.map(reflection => ({
+        id: reflection.id,
+        month: reflection.month,
+        selectedFavorites: reflection.selectedFavorites,
+        reflectionText: reflection.reflectionText,
+        createdAt: reflection.createdAt
+      })),
+      yearlyReviews: yearlyReviews.map(review => ({
+        id: review.id,
+        year: review.year,
+        reflectionText: review.reflectionText,
+        createdAt: review.createdAt
       }))
     };
 
@@ -176,7 +191,10 @@ export default function Export() {
       <div className="mb-8">
         <h1 className="text-2xl font-medium text-stone-900 mb-2">Export</h1>
         <p className="text-stone-600">
-          Download your {entries.length} {entries.length === 1 ? 'reflection' : 'reflections'} in your preferred format
+          Download your {entries.length} {entries.length === 1 ? 'reflection' : 'reflections'}
+          {monthlyReflections.length > 0 && `, ${monthlyReflections.length} ${monthlyReflections.length === 1 ? 'monthly review' : 'monthly reviews'}`}
+          {yearlyReviews.length > 0 && `, and ${yearlyReviews.length} ${yearlyReviews.length === 1 ? 'yearly review' : 'yearly reviews'}`}
+          {' '}in your preferred format
         </p>
       </div>
 
