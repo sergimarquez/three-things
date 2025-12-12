@@ -9,11 +9,13 @@ A thoughtful daily gratitude practice app. Simple, focused, and privacy-first.
 ## Features
 
 ### Core Practice
+
 - **Daily Reflection** - Record three things you're grateful for today
 - **Streak Tracking** - Build consistency with daily streak counters
 - **Star Favorites** - Mark special moments that stand out
 
 ### Journal & Progress
+
 - **Searchable Journal** - Browse and search all your past reflections
 - **Progress Insights** - Monthly completion rates and motivational feedback
 - **Monthly Reviews** - Reflect on each month, highlight your favorite moments, and track patterns
@@ -21,6 +23,7 @@ A thoughtful daily gratitude practice app. Simple, focused, and privacy-first.
 - **Edit & Delete** - Modify past entries as needed
 
 ### Data Control
+
 - **Export Options** - Download your data in JSON, CSV, Text, or Markdown
 - **Year Review Export** - Export your annual review as PDF or Markdown
 - **Import Backups** - Restore from previous exports
@@ -37,12 +40,14 @@ A thoughtful daily gratitude practice app. Simple, focused, and privacy-first.
 ## Architecture
 
 ### State Management
+
 - **Custom React Hooks** - Centralized state management via `useEntries` hook
 - **localStorage Persistence** - Client-side data storage with automatic sync
 - **Event-Driven Updates** - Custom events for cross-component communication
 - **Type-Safe Data Models** - Strict TypeScript types for entries, monthly reflections, and yearly reviews
 
 ### Code Organization
+
 ```
 src/
 ├── components/     # Reusable UI components
@@ -53,6 +58,7 @@ src/
 ```
 
 ### Technical Decisions
+
 - **No External State Library** - Custom hooks provide sufficient abstraction without Redux/Zustand overhead
 - **localStorage over IndexedDB** - Simpler API for small-scale personal data
 - **TypeScript Strict Mode** - Full type safety with `noUnusedLocals` and `noImplicitAny`
@@ -60,6 +66,7 @@ src/
 - **Performance** - Memoization with `useMemo` for expensive calculations
 
 ### Type Safety
+
 - Strict TypeScript configuration with comprehensive type definitions
 - Type-safe data models for all entities (Entry, MonthlyReflection, YearlyReview)
 - Minimal use of `any` types (limited to backward compatibility and union type handling)
@@ -67,18 +74,22 @@ src/
 ## Getting Started
 
 ### Development
+
 ```bash
 npm install
 npm run dev
 ```
 
 ### Production Build
+
 ```bash
 npm run build
 ```
 
 ### Deployment
+
 The app is configured for Netlify with:
+
 - SPA redirect rules (`public/_redirects`)
 - TypeScript compilation in build process
 - Optimized Vite production build
@@ -94,6 +105,7 @@ The app is configured for Netlify with:
 ## Design Philosophy
 
 3Good is built for people who value:
+
 - **Simplicity** - Clean, distraction-free interface
 - **Privacy** - Your reflections stay on your device (localStorage only)
 - **Consistency** - Gentle encouragement to build the habit
@@ -105,4 +117,4 @@ MIT License - feel free to fork and adapt for your own use.
 
 ---
 
-*Built with intention — a tool for mindful reflection*
+_Built with intention — a tool for mindful reflection_
