@@ -16,10 +16,13 @@ A thoughtful daily gratitude practice app. Simple, focused, and privacy-first.
 ### Journal & Progress
 - **Searchable Journal** - Browse and search all your past reflections
 - **Progress Insights** - Monthly completion rates and motivational feedback
+- **Monthly Reviews** - Reflect on each month, highlight your favorite moments, and track patterns
+- **Year in Review** - Annual summary with stats, top moments, and yearly reflection
 - **Edit & Delete** - Modify past entries as needed
 
 ### Data Control
 - **Export Options** - Download your data in JSON, CSV, Text, or Markdown
+- **Year Review Export** - Export your annual review as PDF or Markdown
 - **Import Backups** - Restore from previous exports
 - **Privacy First** - All data stays on your device (localStorage)
 
