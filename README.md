@@ -28,11 +28,11 @@ A thoughtful daily gratitude practice app. Simple, focused, and privacy-first.
 
 ## Tech Stack
 
-- **React 19** + **TypeScript 5.8** + **Vite 6** - Modern React with strict type safety
-- **Tailwind CSS** - Utility-first styling
-- **date-fns** - Immutable date utilities
+- **React 19.1** + **TypeScript 5.8** + **Vite 6.3** - Modern React with strict type safety
+- **Tailwind CSS 3.4** - Utility-first styling
+- **date-fns 4.1** - Immutable date utilities
 - **Lucide React** - Icon library
-- **React Router v6** - Client-side routing with SPA support
+- **React Router 6.30** - Client-side routing with SPA support
 
 ## Architecture
 
@@ -62,7 +62,7 @@ src/
 ### Type Safety
 - Strict TypeScript configuration with comprehensive type definitions
 - Type-safe data models for all entities (Entry, MonthlyReflection, YearlyReview)
-- No `any` types - explicit typing throughout
+- Minimal use of `any` types (limited to backward compatibility and union type handling)
 
 ## Getting Started
 
