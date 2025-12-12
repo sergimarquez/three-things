@@ -28,11 +28,41 @@ A thoughtful daily gratitude practice app. Simple, focused, and privacy-first.
 
 ## Tech Stack
 
-- **React** + **TypeScript** + **Vite**
-- **Tailwind CSS** for styling
-- **date-fns** for date handling
-- **Lucide React** for icons
-- **React Router** for navigation
+- **React 19** + **TypeScript 5.8** + **Vite 6** - Modern React with strict type safety
+- **Tailwind CSS** - Utility-first styling
+- **date-fns** - Immutable date utilities
+- **Lucide React** - Icon library
+- **React Router v6** - Client-side routing with SPA support
+
+## Architecture
+
+### State Management
+- **Custom React Hooks** - Centralized state management via `useEntries` hook
+- **localStorage Persistence** - Client-side data storage with automatic sync
+- **Event-Driven Updates** - Custom events for cross-component communication
+- **Type-Safe Data Models** - Strict TypeScript types for entries, monthly reflections, and yearly reviews
+
+### Code Organization
+```
+src/
+├── components/     # Reusable UI components
+├── hooks/          # Custom React hooks (state management)
+├── layout/         # Layout components
+├── pages/          # Route-level page components
+└── assets/         # Static assets
+```
+
+### Technical Decisions
+- **No External State Library** - Custom hooks provide sufficient abstraction without Redux/Zustand overhead
+- **localStorage over IndexedDB** - Simpler API for small-scale personal data
+- **TypeScript Strict Mode** - Full type safety with `noUnusedLocals` and `noImplicitAny`
+- **SPA Routing** - Netlify redirects configured for client-side routing
+- **Performance** - Memoization with `useMemo` for expensive calculations
+
+### Type Safety
+- Strict TypeScript configuration with comprehensive type definitions
+- Type-safe data models for all entities (Entry, MonthlyReflection, YearlyReview)
+- No `any` types - explicit typing throughout
 
 ## Getting Started
 
@@ -47,11 +77,25 @@ npm run dev
 npm run build
 ```
 
+### Deployment
+The app is configured for Netlify with:
+- SPA redirect rules (`public/_redirects`)
+- TypeScript compilation in build process
+- Optimized Vite production build
+
+## Development Practices
+
+- **ESLint** - Code quality and consistency
+- **TypeScript Strict Mode** - Compile-time type checking
+- **Component-Based Architecture** - Reusable, composable components
+- **Custom Hooks Pattern** - Encapsulated business logic
+- **Performance Optimization** - Memoization for expensive operations
+
 ## Design Philosophy
 
 3Good is built for people who value:
 - **Simplicity** - Clean, distraction-free interface
-- **Privacy** - Your reflections stay on your device
+- **Privacy** - Your reflections stay on your device (localStorage only)
 - **Consistency** - Gentle encouragement to build the habit
 - **Mindfulness** - Thoughtful design that promotes reflection
 
