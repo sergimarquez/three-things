@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { format, parseISO, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { useEntries } from "../hooks/useEntries";
-import type { EntryItem } from "../hooks/useEntries";
+import type { EntryItem, Entry, MonthlyReflection } from "../hooks/useEntries";
 import { Search, Star, Edit3, Trash2, Filter, Plus, Upload, Calendar } from "lucide-react";
 import MonthlyReview from "../components/MonthlyReview";
 import MonthlyReviewCard from "../components/MonthlyReviewCard";
@@ -21,7 +21,10 @@ export default function Archive() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingItems, setEditingItems] = useState<EntryItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [importStatus, setImportStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
   const [showMonthlyReviewModal, setShowMonthlyReviewModal] = useState(false);
   const [selectedMonthForReview, setSelectedMonthForReview] = useState<string | null>(null);
   const [showMonthlyReviews, setShowMonthlyReviews] = useState(true);
@@ -34,10 +37,20 @@ export default function Archive() {
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [showStarredOnly, setShowStarredOnly] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+
+  // Debounce search term - update debouncedSearchTerm 300ms after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Listen for monthly review updates to reload data
   useEffect(() => {
@@ -62,16 +75,16 @@ export default function Archive() {
 
   const formatDisplayDate = (dateStr: string, timeStr: string) => {
     const date = parseISO(dateStr);
-    return `${format(date, 'EEEE, MMMM d, yyyy')} at ${timeStr}`;
+    return `${format(date, "EEEE, MMMM d, yyyy")} at ${timeStr}`;
   };
 
   // Filtered entries
   const filteredEntries = useMemo(() => {
-    let result = entries.filter(entry => {
-      // Search filter
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        const matchesText = entry.items.some(item =>
+    let result = entries.filter((entry) => {
+      // Search filter (using debounced search term)
+      if (debouncedSearchTerm) {
+        const searchLower = debouncedSearchTerm.toLowerCase();
+        const matchesText = entry.items.some((item) =>
           item.text.toLowerCase().includes(searchLower)
         );
         if (!matchesText) return false;
@@ -95,32 +108,38 @@ export default function Archive() {
 
     // If showing starred only, filter the items within each entry
     if (showStarredOnly) {
-      result = result.map(entry => ({
-        ...entry,
-        items: entry.items.filter(item => item.favorite === true) as [EntryItem, EntryItem, EntryItem]
-      })).filter(entry => entry.items.length > 0);
+      result = result
+        .map((entry) => ({
+          ...entry,
+          items: entry.items.filter((item) => item.favorite === true) as [
+            EntryItem,
+            EntryItem,
+            EntryItem
+          ],
+        }))
+        .filter((entry) => entry.items.length > 0);
     }
 
     return result;
-  }, [entries, searchTerm, showStarredOnly, dateFrom, dateTo]);
+  }, [entries, debouncedSearchTerm, showStarredOnly, dateFrom, dateTo]);
 
   // Get months needing review (memoized)
   const monthsNeedingReview = useMemo(() => {
     const today = new Date();
     const currentMonth = format(today, "yyyy-MM");
-    
+
     const monthsWithEntries = new Set<string>();
-    entries.forEach(entry => {
+    entries.forEach((entry) => {
       const month = format(parseISO(entry.date), "yyyy-MM");
       monthsWithEntries.add(month);
     });
 
     const monthsNeeding: string[] = [];
-    monthsWithEntries.forEach(month => {
+    monthsWithEntries.forEach((month) => {
       // Only include months that have ended (not the current month or future months)
       if (month >= currentMonth) return;
-      
-      const hasReflection = monthlyReflections.some(r => r.month === month);
+
+      const hasReflection = monthlyReflections.some((r) => r.month === month);
       if (!hasReflection) {
         monthsNeeding.push(month);
       }
@@ -132,18 +151,24 @@ export default function Archive() {
 
   // Merge entries and monthly reviews chronologically
   const mergedItems = useMemo(() => {
-    type MergedItem = {
-      type: 'entry' | 'monthlyReview';
-      date: string; // For sorting
-      data: any;
-    };
+    type MergedItem =
+      | {
+          type: "entry";
+          date: string; // For sorting
+          data: Entry;
+        }
+      | {
+          type: "monthlyReview";
+          date: string; // For sorting
+          data: MonthlyReflection;
+        };
 
     const items: MergedItem[] = [];
 
     // Add entries
-    filteredEntries.forEach(entry => {
+    filteredEntries.forEach((entry) => {
       items.push({
-        type: 'entry',
+        type: "entry",
         date: entry.date,
         data: entry,
       });
@@ -151,12 +176,12 @@ export default function Archive() {
 
     // Add monthly reviews (only if showMonthlyReviews is true)
     if (showMonthlyReviews) {
-      monthlyReflections.forEach(reflection => {
+      monthlyReflections.forEach((reflection) => {
         // Use the first day of the month for sorting
         const monthDate = parseISO(`${reflection.month}-01`);
         items.push({
-          type: 'monthlyReview',
-          date: format(monthDate, 'yyyy-MM-dd'),
+          type: "monthlyReview",
+          date: format(monthDate, "yyyy-MM-dd"),
           data: reflection,
         });
       });
@@ -172,6 +197,7 @@ export default function Archive() {
 
   const clearFilters = () => {
     setSearchTerm("");
+    setDebouncedSearchTerm("");
     setShowStarredOnly(false);
     setDateFrom("");
     setDateTo("");
@@ -195,18 +221,18 @@ export default function Archive() {
 
         // Validate the JSON structure
         if (!data.entries || !Array.isArray(data.entries)) {
-          throw new Error('Invalid file format');
+          throw new Error("Invalid file format");
         }
 
         // Import the entries
         const importedEntriesCount = importEntries(data.entries);
-        
+
         // Import monthly reflections if they exist (backward compatible)
         let importedMonthlyCount = 0;
         if (data.monthlyReflections && Array.isArray(data.monthlyReflections)) {
           importedMonthlyCount = importMonthlyReflections(data.monthlyReflections);
         }
-        
+
         // Import yearly reviews if they exist (backward compatible)
         let importedYearlyCount = 0;
         if (data.yearlyReviews && Array.isArray(data.yearlyReviews)) {
@@ -216,34 +242,43 @@ export default function Archive() {
         // Build success message
         const parts: string[] = [];
         if (importedEntriesCount > 0) {
-          parts.push(`${importedEntriesCount} ${importedEntriesCount === 1 ? 'reflection' : 'reflections'}`);
+          parts.push(
+            `${importedEntriesCount} ${importedEntriesCount === 1 ? "reflection" : "reflections"}`
+          );
         }
         if (importedMonthlyCount > 0) {
-          parts.push(`${importedMonthlyCount} ${importedMonthlyCount === 1 ? 'monthly review' : 'monthly reviews'}`);
+          parts.push(
+            `${importedMonthlyCount} ${
+              importedMonthlyCount === 1 ? "monthly review" : "monthly reviews"
+            }`
+          );
         }
         if (importedYearlyCount > 0) {
-          parts.push(`${importedYearlyCount} ${importedYearlyCount === 1 ? 'yearly review' : 'yearly reviews'}`);
+          parts.push(
+            `${importedYearlyCount} ${
+              importedYearlyCount === 1 ? "yearly review" : "yearly reviews"
+            }`
+          );
         }
 
         if (parts.length > 0) {
           setImportStatus({
-            type: 'success',
-            message: `Successfully imported ${parts.join(', ')}`
+            type: "success",
+            message: `Successfully imported ${parts.join(", ")}`,
           });
         } else {
           setImportStatus({
-            type: 'success',
-            message: 'No new data to import (all items already exist)'
+            type: "success",
+            message: "No new data to import (all items already exist)",
           });
         }
 
         // Clear the status after 5 seconds
         setTimeout(() => setImportStatus(null), 5000);
-
-      } catch (error) {
+      } catch {
         setImportStatus({
-          type: 'error',
-          message: 'Failed to import file. Please ensure it\'s a valid 3Good JSON export.'
+          type: "error",
+          message: "Failed to import file. Please ensure it's a valid 3Good JSON export.",
         });
         setTimeout(() => setImportStatus(null), 5000);
       }
@@ -251,7 +286,7 @@ export default function Archive() {
 
     reader.readAsText(file);
     // Reset the input
-    event.target.value = '';
+    event.target.value = "";
   };
 
   // Show loading state while data is being loaded from localStorage
@@ -277,11 +312,10 @@ export default function Archive() {
             <div className="w-8 h-8 border-2 border-stone-300 rounded-full border-dashed"></div>
           </div>
 
-          <h2 className="text-xl font-medium text-stone-900 mb-2">
-            Your journal is empty
-          </h2>
+          <h2 className="text-xl font-medium text-stone-900 mb-2">Your journal is empty</h2>
           <p className="text-stone-600 mb-6">
-            Start your gratitude practice by recording your first reflection, or import from a backup
+            Start your gratitude practice by recording your first reflection, or import from a
+            backup
           </p>
 
           <div className="flex items-center gap-3 justify-center">
@@ -317,7 +351,7 @@ export default function Archive() {
   };
 
   const saveEdit = (entryId: string, originalDate: string, originalTime: string) => {
-    const entry = entries.find(e => e.id === entryId);
+    const entry = entries.find((e) => e.id === entryId);
     if (entry) {
       updateEntry(entryId, {
         date: originalDate,
@@ -355,7 +389,7 @@ export default function Archive() {
         <div>
           <h1 className="text-2xl font-medium text-stone-900">Journal</h1>
           <p className="text-stone-600 mt-1">
-            {mergedItems.length} {mergedItems.length === 1 ? 'item' : 'items'}
+            {mergedItems.length} {mergedItems.length === 1 ? "item" : "items"}
             {activeFiltersCount > 0 && ` (filtered)`}
           </p>
         </div>
@@ -373,9 +407,10 @@ export default function Archive() {
             onClick={() => setShowFilters(!showFilters)}
             className={`
               inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-              ${showFilters || activeFiltersCount > 0
-                ? "bg-stone-900 text-white"
-                : "border border-stone-300 text-stone-700 hover:bg-stone-50"
+              ${
+                showFilters || activeFiltersCount > 0
+                  ? "bg-stone-900 text-white"
+                  : "border border-stone-300 text-stone-700 hover:bg-stone-50"
               }
             `}
           >
@@ -401,13 +436,16 @@ export default function Archive() {
 
       {/* Import Status */}
       {importStatus && (
-        <div className={`
+        <div
+          className={`
           mb-6 p-4 rounded-lg border
-          ${importStatus.type === 'success'
-            ? 'bg-green-50 border-green-200 text-green-800'
-            : 'bg-red-50 border-red-200 text-red-800'
+          ${
+            importStatus.type === "success"
+              ? "bg-green-50 border-green-200 text-green-800"
+              : "bg-red-50 border-red-200 text-red-800"
           }
-        `}>
+        `}
+        >
           {importStatus.message}
         </div>
       )}
@@ -476,11 +514,12 @@ export default function Archive() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Search */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-stone-700 mb-2">
-                Search
-              </label>
+              <label className="block text-sm font-medium text-stone-700 mb-2">Search</label>
               <div className="relative">
-                <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400" />
+                <Search
+                  size={16}
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400"
+                />
                 <input
                   type="text"
                   value={searchTerm}
@@ -493,9 +532,7 @@ export default function Archive() {
 
             {/* Date Range */}
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-2">
-                From Date
-              </label>
+              <label className="block text-sm font-medium text-stone-700 mb-2">From Date</label>
               <input
                 type="date"
                 value={dateFrom}
@@ -505,9 +542,7 @@ export default function Archive() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-2">
-                To Date
-              </label>
+              <label className="block text-sm font-medium text-stone-700 mb-2">To Date</label>
               <input
                 type="date"
                 value={dateTo}
@@ -540,9 +575,7 @@ export default function Archive() {
                   onChange={(e) => setShowMonthlyReviews(e.target.checked)}
                   className="rounded border-stone-300 text-stone-900 focus:ring-stone-500"
                 />
-                <span className="text-sm font-medium text-stone-700">
-                  Show monthly reviews
-                </span>
+                <span className="text-sm font-medium text-stone-700">Show monthly reviews</span>
               </label>
             </div>
           </div>
@@ -552,10 +585,8 @@ export default function Archive() {
       {/* Entries and Monthly Reviews */}
       <div className="space-y-6">
         {mergedItems.map((item) => {
-          if (item.type === 'monthlyReview') {
-            return (
-              <MonthlyReviewCard key={item.data.id} reflection={item.data} />
-            );
+          if (item.type === "monthlyReview") {
+            return <MonthlyReviewCard key={item.data.id} reflection={item.data} />;
           } else {
             const entry = item.data;
             return (
@@ -590,13 +621,14 @@ export default function Archive() {
                     {editingItems.map((item, index) => (
                       <div key={index} className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <label className="text-sm font-medium text-stone-700">
-                            {index + 1}.
-                          </label>
+                          <label className="text-sm font-medium text-stone-700">{index + 1}.</label>
                           <button
                             onClick={() => toggleEditFavorite(index)}
-                            className={`p-1 rounded transition-colors ${item.favorite ? "text-amber-500" : "text-stone-300 hover:text-amber-400"
-                              }`}
+                            className={`p-1 rounded transition-colors ${
+                              item.favorite
+                                ? "text-amber-500"
+                                : "text-stone-300 hover:text-amber-400"
+                            }`}
                           >
                             <Star size={16} fill={item.favorite ? "currentColor" : "none"} />
                           </button>
@@ -630,13 +662,18 @@ export default function Archive() {
                     {entry.items.map((item: EntryItem, index: number) => (
                       <div
                         key={index}
-                        className={`p-3 rounded-lg ${item.favorite ? "bg-amber-50 border border-amber-200" : "bg-stone-50"
-                          }`}
+                        className={`p-3 rounded-lg ${
+                          item.favorite ? "bg-amber-50 border border-amber-200" : "bg-stone-50"
+                        }`}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <p className="text-stone-900 flex-1">{item.text}</p>
                           {item.favorite && (
-                            <Star size={16} className="text-amber-500 mt-0.5 flex-shrink-0" fill="currentColor" />
+                            <Star
+                              size={16}
+                              className="text-amber-500 mt-0.5 flex-shrink-0"
+                              fill="currentColor"
+                            />
                           )}
                         </div>
                       </div>
@@ -652,10 +689,7 @@ export default function Archive() {
       {mergedItems.length === 0 && entries.length > 0 && (
         <div className="text-center py-12">
           <p className="text-stone-600 mb-4">No reflections match your current filters</p>
-          <button
-            onClick={clearFilters}
-            className="text-stone-900 hover:underline"
-          >
+          <button onClick={clearFilters} className="text-stone-900 hover:underline">
             Clear filters to see all entries
           </button>
         </div>
