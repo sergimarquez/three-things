@@ -1,12 +1,13 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { format, parseISO, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
-import { useEntries } from "../hooks/useEntries";
+import { useEntries, DATA_VERSION } from "../hooks/useEntries";
 import type { EntryItem, Entry, MonthlyReflection } from "../hooks/useEntries";
 import { Search, Star, Edit3, Trash2, Filter, Plus, Upload, Calendar } from "lucide-react";
-import MonthlyReview from "../components/MonthlyReview";
 import MonthlyReviewCard from "../components/MonthlyReviewCard";
 
 export default function Archive() {
+  const navigate = useNavigate();
   const {
     entries,
     updateEntry,
@@ -25,8 +26,6 @@ export default function Archive() {
     type: "success" | "error";
     message: string;
   } | null>(null);
-  const [showMonthlyReviewModal, setShowMonthlyReviewModal] = useState(false);
-  const [selectedMonthForReview, setSelectedMonthForReview] = useState<string | null>(null);
   const [showMonthlyReviews, setShowMonthlyReviews] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
@@ -55,17 +54,6 @@ export default function Archive() {
   // Listen for monthly review updates to reload data
   useEffect(() => {
     const handleUpdate = () => {
-      // Trigger hook to reload monthly reflections from localStorage
-      window.dispatchEvent(new CustomEvent("reloadMonthlyReflections"));
-    };
-    window.addEventListener("monthlyReviewUpdated", handleUpdate);
-    return () => window.removeEventListener("monthlyReviewUpdated", handleUpdate);
-  }, []);
-
-  // Listen for monthly review updates to reload data
-  useEffect(() => {
-    const handleUpdate = () => {
-      setShowMonthlyReviewModal(false);
       // Trigger hook to reload monthly reflections from localStorage
       window.dispatchEvent(new CustomEvent("reloadMonthlyReflections"));
     };
@@ -222,6 +210,17 @@ export default function Archive() {
         // Validate the JSON structure
         if (!data.entries || !Array.isArray(data.entries)) {
           throw new Error("Invalid file format");
+        }
+
+        // Check version compatibility (optional, backward compatible)
+        if (data.version) {
+          const [major] = data.version.split(".").map(Number);
+          const [currentMajor] = DATA_VERSION.split(".").map(Number);
+          if (major > currentMajor) {
+            throw new Error(
+              `This backup is from a newer version (${data.version}). Please update the app to import it.`
+            );
+          }
         }
 
         // Import the entries
@@ -466,10 +465,7 @@ export default function Archive() {
             {monthsNeedingReview.map((month) => (
               <button
                 key={month}
-                onClick={() => {
-                  setSelectedMonthForReview(month);
-                  setShowMonthlyReviewModal(true);
-                }}
+                onClick={() => navigate(`/monthly-review/${month}`)}
                 className="px-3 py-1.5 text-sm bg-white border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-100 transition-colors"
               >
                 {format(parseISO(`${month}-01`), "MMMM yyyy")}
@@ -477,23 +473,6 @@ export default function Archive() {
             ))}
           </div>
         </div>
-      )}
-
-      {/* Monthly Review Modal */}
-      {showMonthlyReviewModal && selectedMonthForReview && (
-        <MonthlyReview
-          month={selectedMonthForReview}
-          onClose={() => {
-            setShowMonthlyReviewModal(false);
-            setSelectedMonthForReview(null);
-          }}
-          onSave={() => {
-            setShowMonthlyReviewModal(false);
-            setSelectedMonthForReview(null);
-            // Dispatch event to trigger re-render
-            window.dispatchEvent(new CustomEvent("monthlyReviewUpdated"));
-          }}
-        />
       )}
 
       {/* Filters Panel */}

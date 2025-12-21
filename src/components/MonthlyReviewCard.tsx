@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { format, parseISO } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import { useEntries } from "../hooks/useEntries";
 import { Star, Edit3, Calendar } from "lucide-react";
-import MonthlyReview from "./MonthlyReview";
 
 type Props = {
   reflection: {
@@ -15,8 +14,8 @@ type Props = {
 };
 
 export default function MonthlyReviewCard({ reflection }: Props) {
+  const navigate = useNavigate();
   const { entries, getEntriesForMonth } = useEntries();
-  const [isEditing, setIsEditing] = useState(false);
 
   const monthEntries = getEntriesForMonth(reflection.month);
   const monthDate = parseISO(`${reflection.month}-01`);
@@ -29,13 +28,13 @@ export default function MonthlyReviewCard({ reflection }: Props) {
       // So we need to split from the end - last part is itemIndex
       const lastDashIndex = key.lastIndexOf("-");
       if (lastDashIndex === -1) return null;
-      
+
       const entryId = key.substring(0, lastDashIndex);
       const itemIndexStr = key.substring(lastDashIndex + 1);
       const itemIndex = parseInt(itemIndexStr);
-      
+
       if (isNaN(itemIndex)) return null;
-      
+
       const entry = entries.find((e) => e.id === entryId);
       if (entry && entry.items[itemIndex] !== undefined) {
         return {
@@ -53,24 +52,8 @@ export default function MonthlyReviewCard({ reflection }: Props) {
   };
 
   const handleEdit = () => {
-    setIsEditing(true);
+    navigate(`/monthly-review/${reflection.month}`);
   };
-
-  const handleSave = () => {
-    setIsEditing(false);
-    // Force a re-render by dispatching an event
-    window.dispatchEvent(new CustomEvent("monthlyReviewUpdated"));
-  };
-
-  if (isEditing) {
-    return (
-      <MonthlyReview
-        month={reflection.month}
-        onClose={() => setIsEditing(false)}
-        onSave={handleSave}
-      />
-    );
-  }
 
   return (
     <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
@@ -106,7 +89,11 @@ export default function MonthlyReviewCard({ reflection }: Props) {
                 key={index}
                 className="flex items-start gap-2 p-3 bg-white rounded-lg border border-blue-100"
               >
-                <Star size={16} className="text-amber-500 mt-0.5 flex-shrink-0" fill="currentColor" />
+                <Star
+                  size={16}
+                  className="text-amber-500 mt-0.5 flex-shrink-0"
+                  fill="currentColor"
+                />
                 <div className="flex-1">
                   <div className="text-xs text-stone-500 mb-1">
                     {format(parseISO(item.date), "MMM d")}
@@ -129,4 +116,3 @@ export default function MonthlyReviewCard({ reflection }: Props) {
     </div>
   );
 }
-
