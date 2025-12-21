@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Circle, BookOpen, TrendingUp, Download, Info } from "lucide-react";
+import { DATA_VERSION } from "../hooks/useEntries";
 
 export default function Layout() {
   const location = useLocation();
@@ -9,11 +10,11 @@ export default function Layout() {
   // Listen for entry additions to force re-render
   useEffect(() => {
     const handleEntryAdded = () => {
-      setForceUpdate(prev => prev + 1);
+      setForceUpdate((prev) => prev + 1);
     };
 
-    window.addEventListener('entryAdded', handleEntryAdded);
-    return () => window.removeEventListener('entryAdded', handleEntryAdded);
+    window.addEventListener("entryAdded", handleEntryAdded);
+    return () => window.removeEventListener("entryAdded", handleEntryAdded);
   }, [forceUpdate]);
 
   const navItems = [
@@ -23,8 +24,6 @@ export default function Layout() {
     { name: "Export", path: "/export", icon: Download },
     { name: "About", path: "/instructions", icon: Info },
   ];
-
-
 
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col">
@@ -50,9 +49,10 @@ export default function Layout() {
                     className={`
                       relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
                       transition-all duration-200 hover:bg-stone-100
-                      ${isActive
-                        ? "text-stone-900 bg-stone-100"
-                        : "text-stone-600 hover:text-stone-900"
+                      ${
+                        isActive
+                          ? "text-stone-900 bg-stone-100"
+                          : "text-stone-600 hover:text-stone-900"
                       }
                     `}
                   >
@@ -83,13 +83,11 @@ export default function Layout() {
             >
               sergimarquez
             </a>{" "}
-            <span className="mx-2 text-stone-300">|</span>
-            © {new Date().getFullYear()}
+            <span className="mx-2 text-stone-300">|</span>v{DATA_VERSION}{" "}
+            <span className="mx-2 text-stone-300">|</span>© {new Date().getFullYear()}
           </p>
         </div>
       </footer>
-
-
     </div>
   );
 }

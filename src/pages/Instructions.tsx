@@ -1,4 +1,5 @@
 import { Heart, Brain, Moon, Users, Focus, Lightbulb, Shield, Smartphone } from "lucide-react";
+import { DATA_VERSION } from "../hooks/useEntries";
 
 export default function About() {
   return (
@@ -17,8 +18,8 @@ export default function About() {
         <h2 className="text-lg font-medium text-stone-900 mb-4">The Practice</h2>
         <div className="prose prose-stone max-w-none">
           <p className="text-stone-700 leading-relaxed mb-4">
-            Each day brings moments worth appreciating — some small, others profound.
-            This simple practice asks you to pause and notice what you're grateful for today.
+            Each day brings moments worth appreciating — some small, others profound. This simple
+            practice asks you to pause and notice what you're grateful for today.
           </p>
           <p className="text-stone-700 leading-relaxed">
             Not to force positivity, but to train attention. To build the habit of noticing good
@@ -39,7 +40,8 @@ export default function About() {
               <div>
                 <h3 className="font-medium text-stone-900 mb-1">Mental Clarity</h3>
                 <p className="text-sm text-stone-600 leading-relaxed">
-                  Regular gratitude practice reduces mental noise and builds resilience against stress and overwhelm.
+                  Regular gratitude practice reduces mental noise and builds resilience against
+                  stress and overwhelm.
                 </p>
               </div>
             </div>
@@ -51,7 +53,8 @@ export default function About() {
               <div>
                 <h3 className="font-medium text-stone-900 mb-1">Better Rest</h3>
                 <p className="text-sm text-stone-600 leading-relaxed">
-                  Ending the day with gratitude creates mental space for deeper, more restorative sleep.
+                  Ending the day with gratitude creates mental space for deeper, more restorative
+                  sleep.
                 </p>
               </div>
             </div>
@@ -96,8 +99,9 @@ export default function About() {
             <div>
               <h3 className="font-medium text-stone-900 mb-2">Notice Today's Good</h3>
               <p className="text-stone-700 text-sm leading-relaxed">
-                Each day, think about what you're grateful for right now. What moments brought you joy,
-                satisfaction, or peace? They can be small (good coffee) or significant (meaningful conversation).
+                Each day, think about what you're grateful for right now. What moments brought you
+                joy, satisfaction, or peace? They can be small (good coffee) or significant
+                (meaningful conversation).
               </p>
             </div>
           </div>
@@ -135,8 +139,8 @@ export default function About() {
             <div>
               <h3 className="font-medium text-stone-900 mb-2">Stay Consistent</h3>
               <p className="text-stone-700 text-sm leading-relaxed">
-                Like any practice, consistency matters more than perfection.
-                Even a few minutes daily builds the habit of noticing good.
+                Like any practice, consistency matters more than perfection. Even a few minutes
+                daily builds the habit of noticing good.
               </p>
             </div>
           </div>
@@ -150,12 +154,26 @@ export default function About() {
           <h2 className="text-lg font-medium text-stone-900">Gentle Guidance</h2>
         </div>
         <div className="space-y-3 text-sm text-stone-700">
-          <p>• <strong>Include variety:</strong> Mix profound moments with simple pleasures</p>
-          <p>• <strong>Notice people:</strong> Gratitude for relationships tends to be most meaningful</p>
-          <p>• <strong>Find your rhythm:</strong> Some prefer morning reflection, others evening</p>
-          <p>• <strong>Avoid repetition:</strong> Challenge yourself to find new things each day</p>
-          <p>• <strong>Review occasionally:</strong> Your journal becomes a record of accumulated gratitude</p>
-          <p>• <strong>Be patient:</strong> The benefits of this practice compound over time</p>
+          <p>
+            • <strong>Include variety:</strong> Mix profound moments with simple pleasures
+          </p>
+          <p>
+            • <strong>Notice people:</strong> Gratitude for relationships tends to be most
+            meaningful
+          </p>
+          <p>
+            • <strong>Find your rhythm:</strong> Some prefer morning reflection, others evening
+          </p>
+          <p>
+            • <strong>Avoid repetition:</strong> Challenge yourself to find new things each day
+          </p>
+          <p>
+            • <strong>Review occasionally:</strong> Your journal becomes a record of accumulated
+            gratitude
+          </p>
+          <p>
+            • <strong>Be patient:</strong> The benefits of this practice compound over time
+          </p>
         </div>
       </div>
 
@@ -217,12 +235,13 @@ export default function About() {
         </div>
 
         <div className="mt-8 pt-6 border-t border-stone-200 text-center">
-          <p className="text-sm text-stone-600">
-            Created by a frontend developer who believes in building focused,
-            thoughtful tools for mindful living.
+          <p className="text-sm text-stone-600 mb-2">
+            Created by a frontend developer who believes in building focused, thoughtful tools for
+            mindful living.
           </p>
+          <p className="text-xs text-stone-500">Version {DATA_VERSION}</p>
         </div>
       </div>
     </div>
   );
-} 
+}
