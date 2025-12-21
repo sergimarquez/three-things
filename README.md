@@ -16,17 +16,17 @@ A thoughtful daily gratitude practice app. Simple, focused, and privacy-first.
 
 ### Journal & Progress
 
-- **Searchable Journal** - Browse and search all your past reflections
+- **Searchable Journal** - Browse and search all your past reflections with debounced search
 - **Progress Insights** - Monthly completion rates and motivational feedback
-- **Monthly Reviews** - Reflect on each month, highlight your favorite moments, and track patterns
+- **Monthly Reviews** - Full-page workflow to select your top 5 favorite moments from starred entries, with optional review mode to star additional moments
 - **Year in Review** - Annual summary with stats, top moments, and yearly reflection
 - **Edit & Delete** - Modify past entries as needed
 
 ### Data Control
 
-- **Export Options** - Download your data in JSON, CSV, Text, or Markdown
+- **Export Options** - Download your data in JSON (v1.1.0), CSV, Text, or Markdown
 - **Year Review Export** - Export your annual review as PDF or Markdown
-- **Import Backups** - Restore from previous exports
+- **Import Backups** - Restore from previous exports with version compatibility checks
 - **Privacy First** - All data stays on your device (localStorage)
 
 ## Tech Stack
@@ -62,8 +62,8 @@ src/
 - **No External State Library** - Custom hooks provide sufficient abstraction without Redux/Zustand overhead
 - **localStorage over IndexedDB** - Simpler API for small-scale personal data
 - **TypeScript Strict Mode** - Full type safety with `noUnusedLocals` and `noImplicitAny`
-- **SPA Routing** - Netlify redirects configured for client-side routing
-- **Performance** - Memoization with `useMemo` for expensive calculations
+- **SPA Routing** - Netlify redirects configured for client-side routing with dedicated pages for reviews
+- **Performance** - Memoization with `useMemo` for expensive calculations, debounced search input
 
 ### Type Safety
 
@@ -101,6 +101,38 @@ The app is configured for Netlify with:
 - **Component-Based Architecture** - Reusable, composable components
 - **Custom Hooks Pattern** - Encapsulated business logic
 - **Performance Optimization** - Memoization for expensive operations
+
+## Versioning
+
+3Good uses semantic versioning (SemVer) for data exports and compatibility:
+
+- **Current Version**: v1.1.0
+- **Version Format**: `MAJOR.MINOR.PATCH` (e.g., `1.1.0`)
+
+### Version Strategy
+
+- **Major Version (1.x.x)**: Breaking changes to data structure that require migration
+- **Minor Version (x.1.x)**: New features, backward compatible with existing data
+- **Patch Version (x.x.1)**: Bug fixes and improvements, fully backward compatible
+
+### Version in Exports
+
+All JSON exports include a `version` field for compatibility tracking. The app validates version compatibility when importing backups to prevent data corruption.
+
+### Updating Versions
+
+When adding features or making changes:
+
+1. **Update `DATA_VERSION`** in `src/hooks/useEntries.ts`
+2. **Update README** if features change significantly
+3. **Test import/export** with previous version backups
+4. **Add migration logic** if breaking changes are needed (major version bump)
+
+The version is displayed in:
+
+- App footer
+- About page
+- JSON export files
 
 ## Design Philosophy
 
