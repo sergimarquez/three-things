@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { format, parseISO, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
+import { format, parseISO, isAfter, isBefore, startOfDay, endOfDay, endOfMonth } from "date-fns";
 import { useEntries, DATA_VERSION } from "../hooks/useEntries";
 import type { EntryItem, Entry, MonthlyReflection } from "../hooks/useEntries";
 import { Search, Star, Edit3, Trash2, Filter, Plus, Upload, Calendar } from "lucide-react";
@@ -165,20 +165,36 @@ export default function Archive() {
     // Add monthly reviews (only if showMonthlyReviews is true)
     if (showMonthlyReviews) {
       monthlyReflections.forEach((reflection) => {
-        // Use the first day of the month for sorting
+        // Use the last day of the month with a time component to ensure it sorts after entries
+        // We'll use a date string that represents end of the last day
         const monthDate = parseISO(`${reflection.month}-01`);
+        const lastDayOfMonth = endOfMonth(monthDate);
+        // Format as yyyy-MM-dd but this will sort after entries on the same day
+        // To ensure it's after, we'll use the last day but in the sort function handle it specially
         items.push({
           type: "monthlyReview",
-          date: format(monthDate, "yyyy-MM-dd"),
+          date: format(lastDayOfMonth, "yyyy-MM-dd"),
           data: reflection,
         });
       });
     }
 
-    // Sort by date (newest first)
+    // Sort by date (newest first), with monthly reviews appearing before all entries from their month
     return items.sort((a, b) => {
       const dateA = parseISO(a.date).getTime();
       const dateB = parseISO(b.date).getTime();
+
+      // Extract month from dates for comparison
+      const monthA = format(parseISO(a.date), "yyyy-MM");
+      const monthB = format(parseISO(b.date), "yyyy-MM");
+
+      // If items are from the same month, always put reviews before entries
+      if (monthA === monthB && a.type !== b.type) {
+        if (a.type === "monthlyReview") return -1; // Review always comes first
+        if (b.type === "monthlyReview") return 1; // Entry always comes after
+      }
+
+      // Otherwise sort by date (newest first)
       return dateB - dateA;
     });
   }, [filteredEntries, monthlyReflections, showMonthlyReviews]);
