@@ -334,6 +334,13 @@ export default function Archive() {
           </p>
 
           <div className="flex items-center gap-3 justify-center">
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleFileChange}
+              ref={fileInputRef}
+              className="hidden"
+            />
             <button
               onClick={handleImport}
               className="inline-flex items-center gap-2 px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors"
