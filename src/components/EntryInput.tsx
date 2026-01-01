@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import { useEntries } from "../hooks/useEntries";
 import type { EntryItem } from "../hooks/useEntries";
 import { Link } from "react-router-dom";
-import { Star, BookOpen, TrendingUp, ArrowRight, Check, Calendar, X } from "lucide-react";
+import { Star, BookOpen, TrendingUp, ArrowRight, Check, Calendar, X, Sparkles } from "lucide-react";
 import LocalStorageNotice from "./LocalStorageNotice";
-import MonthlyReview from "./MonthlyReview";
 
 const placeholders = [
   "Something you're grateful for today...",
@@ -22,6 +22,7 @@ const completionMessages = [
 ];
 
 export default function EntryInput() {
+  const navigate = useNavigate();
   const {
     entries,
     saveEntry,
@@ -29,13 +30,12 @@ export default function EntryInput() {
     shouldShowMonthlyReviewPrompt,
     shouldShowYearlyReviewPrompt,
     getPreviousMonth,
+    isLoading,
   } = useEntries();
   const [items, setItems] = useState<EntryItem[]>([{ text: "" }, { text: "" }, { text: "" }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [showMonthlyReviewPrompt, setShowMonthlyReviewPrompt] = useState(false);
-  const [showMonthlyReviewModal, setShowMonthlyReviewModal] = useState(false);
-  const [selectedMonthForReview, setSelectedMonthForReview] = useState<string | null>(null);
   const [dismissedPromptMonth, setDismissedPromptMonth] = useState<string | null>(() => {
     const stored = localStorage.getItem("three-things-dismissed-month");
     return stored || null;
@@ -48,32 +48,95 @@ export default function EntryInput() {
 
   // Check if we should show monthly review prompt
   useEffect(() => {
-    const shouldShow = shouldShowMonthlyReviewPrompt();
-    if (shouldShow) {
-      const previousMonth = getPreviousMonth();
-      if (dismissedPromptMonth !== previousMonth) {
-        setShowMonthlyReviewPrompt(true);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dismissedPromptMonth]);
+    // Don't check until data is loaded
+    if (isLoading) return;
 
-  // Check if we should show yearly review banner (Jan 1)
-  useEffect(() => {
-    const shouldShow = shouldShowYearlyReviewPrompt();
-    if (shouldShow) {
-      const previousYear = String(new Date().getFullYear() - 1);
-      if (dismissedYearBanner !== previousYear) {
-        setShowYearlyReviewBanner(true);
+    const checkMonthlyPrompt = () => {
+      const shouldShow = shouldShowMonthlyReviewPrompt();
+      const previousMonth = getPreviousMonth();
+
+      console.log("Monthly prompt check:", {
+        shouldShow,
+        previousMonth,
+        dismissedPromptMonth,
+        isFirstOfMonth: new Date().getDate() === 1,
+        entriesCount: entries.length,
+      });
+
+      if (shouldShow) {
+        if (dismissedPromptMonth !== previousMonth) {
+          console.log("✅ Showing monthly review prompt for", previousMonth);
+          setShowMonthlyReviewPrompt(true);
+        } else {
+          console.log("❌ Monthly prompt dismissed for", previousMonth);
+          setShowMonthlyReviewPrompt(false);
+        }
+      } else {
+        console.log("❌ Monthly prompt should not show");
+        setShowMonthlyReviewPrompt(false);
       }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dismissedYearBanner]);
+    };
+
+    // Check immediately
+    checkMonthlyPrompt();
+
+    // Also check periodically in case date changes (e.g., at midnight)
+    const interval = setInterval(checkMonthlyPrompt, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [
+    dismissedPromptMonth,
+    entries.length,
+    isLoading,
+    shouldShowMonthlyReviewPrompt,
+    getPreviousMonth,
+  ]);
+
+  // Check if we should show yearly review prompt (first week of January)
+  useEffect(() => {
+    // Don't check until data is loaded
+    if (isLoading) return;
+
+    const checkYearlyPrompt = () => {
+      const shouldShow = shouldShowYearlyReviewPrompt();
+      const today = new Date();
+      const previousYear = String(today.getFullYear() - 1);
+
+      console.log("Yearly prompt check:", {
+        shouldShow,
+        previousYear,
+        dismissedYearBanner,
+        isJanuary: today.getMonth() === 0,
+        dayOfMonth: today.getDate(),
+        entriesCount: entries.length,
+      });
+
+      if (shouldShow) {
+        if (dismissedYearBanner !== previousYear) {
+          console.log("✅ Showing yearly review prompt for", previousYear);
+          setShowYearlyReviewBanner(true);
+        } else {
+          console.log("❌ Yearly prompt dismissed for", previousYear);
+          setShowYearlyReviewBanner(false);
+        }
+      } else {
+        console.log("❌ Yearly prompt should not show");
+        setShowYearlyReviewBanner(false);
+      }
+    };
+
+    // Check immediately
+    checkYearlyPrompt();
+
+    // Also check periodically in case date changes (e.g., at midnight)
+    const interval = setInterval(checkYearlyPrompt, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [dismissedYearBanner, entries.length, isLoading, shouldShowYearlyReviewPrompt]);
 
   // Listen for monthly review updates
   useEffect(() => {
     const handleUpdate = () => {
-      setShowMonthlyReviewModal(false);
       setShowMonthlyReviewPrompt(false);
       window.dispatchEvent(new CustomEvent("reloadMonthlyReflections"));
     };
@@ -169,7 +232,86 @@ export default function EntryInput() {
 
   if (hasTodayEntry()) {
     return (
-      <div className="max-w-2xl mx-auto min-h-[calc(100vh-200px)] flex items-center justify-center">
+      <div className="max-w-2xl mx-auto min-h-[calc(100vh-200px)] flex flex-col justify-center">
+        {/* Yearly Review - Special once-a-year reminder */}
+        {showYearlyReviewBanner && (
+          <div className="mb-8 text-center">
+            <div className="inline-block p-6 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 border border-amber-200/50 rounded-2xl shadow-sm">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <Sparkles size={20} className="text-amber-600" />
+                <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">
+                  Once a Year
+                </span>
+              </div>
+              <h3 className="text-lg font-semibold text-stone-900 mb-2">
+                Your {new Date().getFullYear() - 1} Year in Review
+              </h3>
+              <p className="text-sm text-stone-600 mb-4 max-w-md">
+                Take a moment to reflect on your year—all your favorite moments and highlights are
+                waiting
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <Link
+                  to="/year-review"
+                  className="px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-200 hover:scale-105 text-sm font-medium shadow-sm"
+                >
+                  Review Your Year
+                </Link>
+                <button
+                  onClick={() => {
+                    const year = String(new Date().getFullYear() - 1);
+                    setShowYearlyReviewBanner(false);
+                    setDismissedYearBanner(year);
+                    localStorage.setItem("three-things-dismissed-year", year);
+                  }}
+                  className="px-4 py-2 text-stone-500 hover:text-stone-700 text-sm transition-colors"
+                >
+                  Maybe later
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Monthly Review Prompt Banner */}
+        {showMonthlyReviewPrompt && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Calendar size={20} className="text-blue-600" />
+              <div>
+                <h3 className="font-medium text-stone-900">
+                  Review your {format(parseISO(`${getPreviousMonth()}-01`), "MMMM")}
+                </h3>
+                <p className="text-sm text-stone-600">
+                  Take a moment to reflect on last month and select your favorite moments
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  navigate(`/monthly-review/${getPreviousMonth()}`);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                Review Now
+              </button>
+              <button
+                onClick={() => {
+                  const month = getPreviousMonth();
+                  setShowMonthlyReviewPrompt(false);
+                  setDismissedPromptMonth(month);
+                  localStorage.setItem("three-things-dismissed-month", month);
+                }}
+                className="p-2 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-blue-100"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Success Message */}
         <div className="bg-white border border-stone-200 rounded-2xl p-8 text-center animate-[fadeIn_0.5s_ease-out]">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <div className="w-8 h-8 bg-green-500 rounded-full"></div>
@@ -205,34 +347,42 @@ export default function EntryInput() {
 
   return (
     <div className="max-w-2xl mx-auto min-h-[calc(100vh-200px)] flex flex-col justify-center">
-      {/* Yearly Review Banner */}
+      {/* Yearly Review - Special once-a-year reminder */}
       {showYearlyReviewBanner && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Calendar size={20} className="text-blue-600" />
-            <div>
-              <h3 className="font-medium text-stone-900">Your Year in Review is ready</h3>
-              <p className="text-sm text-stone-600">Look back at last year's highlights and favorite moments</p>
+        <div className="mb-8 text-center">
+          <div className="inline-block p-6 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 border border-amber-200/50 rounded-2xl shadow-sm">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <Sparkles size={20} className="text-amber-600" />
+              <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">
+                Once a Year
+              </span>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              to="/year-review"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-            >
-              View Year Review
-            </Link>
-            <button
-              onClick={() => {
-                const year = String(new Date().getFullYear() - 1);
-                setShowYearlyReviewBanner(false);
-                setDismissedYearBanner(year);
-                localStorage.setItem("three-things-dismissed-year", year);
-              }}
-              className="p-2 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-blue-100"
-            >
-              <X size={16} />
-            </button>
+            <h3 className="text-lg font-semibold text-stone-900 mb-2">
+              Your {new Date().getFullYear() - 1} Year in Review
+            </h3>
+            <p className="text-sm text-stone-600 mb-4 max-w-md">
+              Take a moment to reflect on your year—all your favorite moments and highlights are
+              waiting
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <Link
+                to="/year-review"
+                className="px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-200 hover:scale-105 text-sm font-medium shadow-sm"
+              >
+                Review Your Year
+              </Link>
+              <button
+                onClick={() => {
+                  const year = String(new Date().getFullYear() - 1);
+                  setShowYearlyReviewBanner(false);
+                  setDismissedYearBanner(year);
+                  localStorage.setItem("three-things-dismissed-year", year);
+                }}
+                className="px-4 py-2 text-stone-500 hover:text-stone-700 text-sm transition-colors"
+              >
+                Maybe later
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -243,15 +393,18 @@ export default function EntryInput() {
           <div className="flex items-center gap-3">
             <Calendar size={20} className="text-blue-600" />
             <div>
-              <h3 className="font-medium text-stone-900">Review your {format(parseISO(`${getPreviousMonth()}-01`), "MMMM")}</h3>
-              <p className="text-sm text-stone-600">Take a moment to reflect on last month and select your favorite moments</p>
+              <h3 className="font-medium text-stone-900">
+                Review your {format(parseISO(`${getPreviousMonth()}-01`), "MMMM")}
+              </h3>
+              <p className="text-sm text-stone-600">
+                Take a moment to reflect on last month and select your favorite moments
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                setSelectedMonthForReview(getPreviousMonth());
-                setShowMonthlyReviewModal(true);
+                navigate(`/monthly-review/${getPreviousMonth()}`);
               }}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
             >
@@ -270,25 +423,6 @@ export default function EntryInput() {
             </button>
           </div>
         </div>
-      )}
-
-      {/* Monthly Review Modal */}
-      {showMonthlyReviewModal && selectedMonthForReview && (
-        <MonthlyReview
-          month={selectedMonthForReview}
-          onClose={() => {
-            setShowMonthlyReviewModal(false);
-            setSelectedMonthForReview(null);
-          }}
-          onSave={() => {
-            setShowMonthlyReviewModal(false);
-            setShowMonthlyReviewPrompt(false);
-            setSelectedMonthForReview(null);
-            setDismissedPromptMonth(null);
-            localStorage.removeItem("three-things-dismissed-month");
-            window.dispatchEvent(new CustomEvent("monthlyReviewUpdated"));
-          }}
-        />
       )}
 
       {/* Header */}
