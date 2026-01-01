@@ -61,6 +61,23 @@ export default function YearReview() {
     reflection.month.startsWith(selectedYear)
   );
 
+  // Group top moments by month
+  const momentsByMonth = topMoments.reduce((acc, moment) => {
+    const monthKey = format(parseISO(moment.date), "MMMM yyyy");
+    if (!acc[monthKey]) {
+      acc[monthKey] = [];
+    }
+    acc[monthKey].push(moment);
+    return acc;
+  }, {} as Record<string, typeof topMoments>);
+
+  // Sort months chronologically
+  const sortedMonths = Object.keys(momentsByMonth).sort((a, b) => {
+    return (
+      parseISO(momentsByMonth[a][0].date).getTime() - parseISO(momentsByMonth[b][0].date).getTime()
+    );
+  });
+
   const handleSave = () => {
     saveYearlyReview({
       year: selectedYear,
@@ -144,6 +161,14 @@ export default function YearReview() {
               font-size: 20px; 
               margin: 32px 0 16px 0; 
               color: #374151;
+            }
+            h3 {
+              font-size: 18px;
+              font-weight: 600;
+              color: #374151;
+              margin: 24px 0 12px 0;
+              padding-bottom: 8px;
+              border-bottom: 2px solid #e5e7eb;
             }
             .stats {
               display: grid;
@@ -238,16 +263,51 @@ export default function YearReview() {
           ${
             topMoments.length === 0
               ? "<p style='color: #6b7280; font-style: italic;'>No moments available.</p>"
-              : topMoments
-                  .map(
-                    (m) => `
-              <div class="moment">
-                <div class="moment-date">${format(parseISO(m.date), "MMMM d, yyyy")}</div>
-                <div class="moment-text">${m.text}</div>
-              </div>
-            `
-                  )
-                  .join("")
+              : (() => {
+                  // Group moments by month
+                  const pdfMomentsByMonth: Record<string, typeof topMoments> = {};
+                  topMoments.forEach((moment) => {
+                    const monthKey = format(parseISO(moment.date), "MMMM yyyy");
+                    if (!pdfMomentsByMonth[monthKey]) {
+                      pdfMomentsByMonth[monthKey] = [];
+                    }
+                    pdfMomentsByMonth[monthKey].push(moment);
+                  });
+
+                  // Sort months chronologically
+                  const pdfSortedMonths = Object.keys(pdfMomentsByMonth).sort((a, b) => {
+                    return (
+                      parseISO(pdfMomentsByMonth[a][0].date).getTime() -
+                      parseISO(pdfMomentsByMonth[b][0].date).getTime()
+                    );
+                  });
+
+                  // Build HTML with month groupings
+                  let globalIndex = 0;
+                  return pdfSortedMonths
+                    .map((monthKey) => {
+                      const monthMoments = pdfMomentsByMonth[monthKey];
+                      const monthHtml = `
+                        <h3>${monthKey}</h3>
+                        ${monthMoments
+                          .map((m) => {
+                            globalIndex++;
+                            return `
+                              <div class="moment">
+                                <div class="moment-date">${format(
+                                  parseISO(m.date),
+                                  "MMMM d, yyyy"
+                                )} • #${globalIndex}</div>
+                                <div class="moment-text">${m.text}</div>
+                              </div>
+                            `;
+                          })
+                          .join("")}
+                      `;
+                      return monthHtml;
+                    })
+                    .join("");
+                })()
           }
           
           ${
@@ -401,25 +461,46 @@ export default function YearReview() {
           </div>
         </div>
         {topMoments.length > 0 && (
-          <div className="space-y-3">
-            {topMoments.map((m, idx) => (
-              <div
-                key={idx}
-                className="bg-white border border-amber-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 font-semibold text-sm">
-                    {idx + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium text-amber-700 mb-1.5">
-                      {format(parseISO(m.date), "MMMM d, yyyy")}
-                    </div>
-                    <p className="text-stone-900 leading-relaxed">{m.text}</p>
-                  </div>
+          <div className="space-y-6">
+            {sortedMonths.reduce((acc, monthKey, monthGroupIdx) => {
+              const monthMoments = momentsByMonth[monthKey];
+              const startIndex =
+                monthGroupIdx === 0
+                  ? 0
+                  : sortedMonths
+                      .slice(0, monthGroupIdx)
+                      .reduce((sum, key) => sum + momentsByMonth[key].length, 0);
+
+              acc.push(
+                <div key={monthKey} className="space-y-3">
+                  <h3 className="text-lg font-semibold text-stone-800 mb-3 pb-2 border-b border-amber-200">
+                    {monthKey}
+                  </h3>
+                  {monthMoments.map((m, monthIdx) => {
+                    const currentIndex = startIndex + monthIdx;
+                    return (
+                      <div
+                        key={`${m.entryId}-${m.itemIndex}`}
+                        className="bg-white border border-amber-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 font-semibold text-sm">
+                            {currentIndex + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-medium text-amber-700 mb-1.5">
+                              {format(parseISO(m.date), "MMMM d, yyyy")}
+                            </div>
+                            <p className="text-stone-900 leading-relaxed">{m.text}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-            ))}
+              );
+              return acc;
+            }, [] as JSX.Element[])}
           </div>
         )}
       </div>
