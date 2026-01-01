@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 import { useEntries } from "../hooks/useEntries";
 import type { EntryItem } from "../hooks/useEntries";
-import { Star, Check, ArrowLeft } from "lucide-react";
+import { Star, Check, ArrowLeft, Loader2 } from "lucide-react";
 
 export default function MonthlyReviewPage() {
   const { month } = useParams<{ month: string }>();
@@ -39,6 +39,8 @@ export default function MonthlyReviewPage() {
   const [reflectionText, setReflectionText] = useState(existingReflection?.reflectionText || "");
   const [viewMode, setViewMode] = useState<"review" | "select">("select");
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   // Calculate stats
   const stats = {
@@ -111,17 +113,28 @@ export default function MonthlyReviewPage() {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveMessage(null);
+    setIsSaved(false);
+
+    // Simulate a small delay to show saving state (save is instant, but UX feels better)
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     saveMonthlyReflection({
       month,
       selectedFavorites,
       reflectionText: reflectionText.trim(),
     });
+
+    setIsSaving(false);
+    setIsSaved(true);
     setSaveMessage("Monthly review saved!");
+
+    // Navigate after showing success message
     setTimeout(() => {
-      setSaveMessage(null);
       navigate("/archive");
-    }, 1500);
+    }, 2000);
   };
 
   const monthDate = parseISO(`${month}-01`);
@@ -150,8 +163,9 @@ export default function MonthlyReviewPage() {
 
       {/* Save Message */}
       {saveMessage && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg">
-          {saveMessage}
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg flex items-center gap-3 animate-[fadeIn_0.3s_ease-out]">
+          <Check size={20} className="text-green-600 flex-shrink-0" />
+          <span className="font-medium">{saveMessage}</span>
         </div>
       )}
 
@@ -385,17 +399,31 @@ export default function MonthlyReviewPage() {
       <div className="flex items-center gap-3">
         <button
           onClick={handleSave}
-          disabled={selectedFavorites.length === 0}
+          disabled={selectedFavorites.length === 0 || isSaving || isSaved}
           className={`
-              flex-1 px-6 py-3 rounded-lg font-medium transition-colors
+              flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2
               ${
-                selectedFavorites.length === 0
-                  ? "bg-stone-100 text-stone-400 cursor-not-allowed"
+                selectedFavorites.length === 0 || isSaving || isSaved
+                  ? isSaved
+                    ? "bg-green-600 text-white cursor-default"
+                    : "bg-stone-100 text-stone-400 cursor-not-allowed"
                   : "bg-stone-900 text-white hover:bg-stone-800"
               }
             `}
         >
-          Save Monthly Review
+          {isSaving ? (
+            <>
+              <Loader2 size={18} className="animate-spin" />
+              <span>Saving...</span>
+            </>
+          ) : isSaved ? (
+            <>
+              <Check size={18} />
+              <span>Saved!</span>
+            </>
+          ) : (
+            "Save Monthly Review"
+          )}
         </button>
         <Link
           to="/archive"
