@@ -397,7 +397,7 @@ export default function EntryInput() {
                 Review your {format(parseISO(`${getPreviousMonth()}-01`), "MMMM")}
               </h3>
               <p className="text-sm text-stone-600">
-                Take a moment to reflect on last month and select your favorite moments
+                Reflect on last month and select your favorite moments
               </p>
             </div>
           </div>
