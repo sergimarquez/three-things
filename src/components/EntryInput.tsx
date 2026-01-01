@@ -363,7 +363,7 @@ export default function EntryInput() {
             <div className="flex items-center justify-center gap-2 mb-3">
               <Sparkles size={20} className="text-amber-600" />
               <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">
-                Once a Year
+                Happy New Year
               </span>
             </div>
             <h3 className="text-lg font-semibold text-stone-900 mb-2">
