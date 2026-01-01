@@ -283,7 +283,7 @@ export default function EntryInput() {
                   Review your {format(parseISO(`${getPreviousMonth()}-01`), "MMMM")}
                 </h3>
                 <p className="text-sm text-stone-600">
-                  Take a moment to reflect on last month and select your favorite moments
+                  Reflect on last month and select your favorite moments
                 </p>
               </div>
             </div>
@@ -292,7 +292,7 @@ export default function EntryInput() {
                 onClick={() => {
                   navigate(`/monthly-review/${getPreviousMonth()}`);
                 }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium whitespace-nowrap"
               >
                 Review Now
               </button>
