@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, ReactElement } from "react";
 import { format, parseISO } from "date-fns";
 import { useEntries } from "../hooks/useEntries";
 import { Download, BookOpen } from "lucide-react";
@@ -500,7 +500,7 @@ export default function YearReview() {
                 </div>
               );
               return acc;
-            }, [] as JSX.Element[])}
+            }, [] as ReactElement[])}
           </div>
         )}
       </div>
