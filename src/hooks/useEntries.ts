@@ -384,7 +384,12 @@ export function useEntries() {
         });
       });
 
-    return favorites;
+    // Sort by date (chronologically, oldest first)
+    return favorites.sort((a, b) => {
+      const dateA = parseISO(a.date).getTime();
+      const dateB = parseISO(b.date).getTime();
+      return dateA - dateB;
+    });
   };
 
   const getYearSummary = (year: string) => {
