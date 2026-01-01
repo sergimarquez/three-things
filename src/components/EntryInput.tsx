@@ -92,7 +92,7 @@ export default function EntryInput() {
     getPreviousMonth,
   ]);
 
-  // Check if we should show yearly review prompt (first week of January)
+  // Check if we should show yearly review prompt (throughout January)
   useEffect(() => {
     // Don't check until data is loaded
     if (isLoading) return;
@@ -104,6 +104,20 @@ export default function EntryInput() {
       const decemberMonth = `${previousYear}-12`;
       const decemberDismissed = dismissedPromptMonth === decemberMonth;
 
+      // Check if user visited review page today - if so, don't show tomorrow
+      const reviewVisitedKey = `year-review-visited-${previousYear}`;
+      const reviewVisitedDate = localStorage.getItem(reviewVisitedKey);
+      const todayStr = format(today, "yyyy-MM-dd");
+      const visitedToday = reviewVisitedDate === todayStr;
+      const visitedYesterday = reviewVisitedDate && reviewVisitedDate !== todayStr;
+
+      // If user visited review page yesterday, don't show today
+      if (visitedYesterday) {
+        console.log("❌ Yearly prompt visited yesterday, not showing today");
+        setShowYearlyReviewBanner(false);
+        return;
+      }
+
       console.log("Yearly prompt check:", {
         shouldShow,
         previousYear,
@@ -112,10 +126,12 @@ export default function EntryInput() {
         isJanuary: today.getMonth() === 0,
         dayOfMonth: today.getDate(),
         entriesCount: entries.length,
+        visitedToday,
+        visitedYesterday,
       });
 
       if (shouldShow) {
-        if (dismissedYearBanner !== previousYear) {
+        if (dismissedYearBanner !== previousYear && !visitedYesterday) {
           console.log("✅ Showing yearly review prompt for", previousYear);
           setShowYearlyReviewBanner(true);
         } else {
@@ -376,6 +392,12 @@ export default function EntryInput() {
             <div className="flex items-center justify-center gap-3">
               <Link
                 to="/year-review"
+                onClick={() => {
+                  // Track that user visited review page today (will auto-dismiss tomorrow)
+                  const year = String(new Date().getFullYear() - 1);
+                  const todayStr = format(new Date(), "yyyy-MM-dd");
+                  localStorage.setItem(`year-review-visited-${year}`, todayStr);
+                }}
                 className="px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-200 hover:scale-105 text-sm font-medium shadow-sm"
               >
                 Review Your Year
