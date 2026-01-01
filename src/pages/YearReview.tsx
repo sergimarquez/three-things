@@ -5,8 +5,14 @@ import { Download, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function YearReview() {
-  const { getYearsWithEntries, getYearSummary, getYearlyReview, saveYearlyReview, isLoading } =
-    useEntries();
+  const {
+    getYearsWithEntries,
+    getYearSummary,
+    getYearlyReview,
+    saveYearlyReview,
+    isLoading,
+    monthlyReflections,
+  } = useEntries();
 
   const allYearsWithEntries = getYearsWithEntries();
   const currentYear = new Date().getFullYear();
@@ -15,7 +21,13 @@ export default function YearReview() {
   const dayOfMonth = today.getDate();
 
   // Filter out current year - you can only review completed years
-  const yearsWithEntries = allYearsWithEntries.filter((year) => Number(year) < currentYear);
+  // Also filter to only include years that have at least one monthly review
+  const yearsWithEntries = allYearsWithEntries
+    .filter((year) => Number(year) < currentYear)
+    .filter((year) => {
+      // Check if this year has at least one monthly reflection
+      return monthlyReflections.some((reflection) => reflection.month.startsWith(year));
+    });
 
   // If we're in the first week of January, default to previous year for yearly review
   const previousYear = String(currentYear - 1);
@@ -43,6 +55,11 @@ export default function YearReview() {
 
   const summary = getYearSummary(selectedYear);
   const topMoments = summary.topMoments || [];
+
+  // Check if selected year has monthly reviews
+  const hasMonthlyReviews = monthlyReflections.some((reflection) =>
+    reflection.month.startsWith(selectedYear)
+  );
 
   const handleSave = () => {
     saveYearlyReview({
@@ -268,6 +285,55 @@ export default function YearReview() {
           <div className="text-center">
             <div className="w-8 h-8 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-stone-600">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If there are no completed years with entries, show a message
+  if (yearsWithEntries.length === 0) {
+    return (
+      <div className="max-w-4xl mx-auto animate-[fadeIn_0.3s_ease-out]">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <h2 className="text-xl font-medium text-stone-900 mb-2">No Year in Review Available</h2>
+            <p className="text-stone-600 mb-6">
+              You need to complete monthly reviews for a completed year to create a year in review.
+            </p>
+            <Link
+              to="/archive"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors"
+            >
+              <BookOpen size={16} />
+              View Journal
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If selected year doesn't have monthly reviews, show a message
+  if (!hasMonthlyReviews) {
+    return (
+      <div className="max-w-4xl mx-auto animate-[fadeIn_0.3s_ease-out]">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <h2 className="text-xl font-medium text-stone-900 mb-2">
+              Complete Monthly Reviews First
+            </h2>
+            <p className="text-stone-600 mb-6">
+              To create a year in review for {selectedYear}, you need to complete at least one
+              monthly review from that year. Monthly reviews help you select your favorite moments.
+            </p>
+            <Link
+              to="/archive"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors"
+            >
+              <BookOpen size={16} />
+              Go to Archive
+            </Link>
           </div>
         </div>
       </div>
