@@ -101,11 +101,14 @@ export default function EntryInput() {
       const shouldShow = shouldShowYearlyReviewPrompt();
       const today = new Date();
       const previousYear = String(today.getFullYear() - 1);
+      const decemberMonth = `${previousYear}-12`;
+      const decemberDismissed = dismissedPromptMonth === decemberMonth;
 
       console.log("Yearly prompt check:", {
         shouldShow,
         previousYear,
         dismissedYearBanner,
+        decemberDismissed,
         isJanuary: today.getMonth() === 0,
         dayOfMonth: today.getDate(),
         entriesCount: entries.length,
@@ -132,7 +135,13 @@ export default function EntryInput() {
     const interval = setInterval(checkYearlyPrompt, 60000); // Check every minute
 
     return () => clearInterval(interval);
-  }, [dismissedYearBanner, entries.length, isLoading, shouldShowYearlyReviewPrompt]);
+  }, [
+    dismissedYearBanner,
+    dismissedPromptMonth,
+    entries.length,
+    isLoading,
+    shouldShowYearlyReviewPrompt,
+  ]);
 
   // Listen for monthly review updates
   useEffect(() => {

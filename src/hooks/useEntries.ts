@@ -499,14 +499,39 @@ export function useEntries() {
 
   const shouldShowYearlyReviewPrompt = () => {
     const today = new Date();
-    const isJanFirst = today.getMonth() === 0 && today.getDate() === 1; // January is month 0
-    if (!isJanFirst) return false;
+    const isJanuary = today.getMonth() === 0; // January is month 0
+    const dayOfMonth = today.getDate();
+
+    // Only show prompt during first week of January (Jan 1-7)
+    if (!isJanuary || dayOfMonth > 7) return false;
 
     const previousYear = String(today.getFullYear() - 1);
     const hasReview = yearlyReviews.some((r) => r.year === previousYear);
     const hasEntries = getYearEntries(previousYear).length > 0;
 
-    return !hasReview && hasEntries;
+    if (!hasEntries || hasReview) return false;
+
+    // Check December monthly review status
+    const decemberMonth = `${previousYear}-12`;
+    const hasDecemberReview = monthlyReflections.some((r) => r.month === decemberMonth);
+
+    // On Jan 1st: only show if December review is completed
+    if (dayOfMonth === 1) {
+      return hasDecemberReview;
+    }
+
+    // Jan 2-7: show if December review is done OR if December monthly prompt was dismissed
+    // (because monthly review banner won't show after Jan 1st)
+    if (dayOfMonth >= 2 && dayOfMonth <= 7) {
+      // Check if December monthly prompt was dismissed
+      const dismissedMonth = localStorage.getItem("three-things-dismissed-month");
+      const decemberDismissed = dismissedMonth === decemberMonth;
+
+      // Show if December review is done OR if user dismissed the December prompt
+      return hasDecemberReview || decemberDismissed;
+    }
+
+    return false;
   };
 
   // Get months that have entries but no reflection yet
