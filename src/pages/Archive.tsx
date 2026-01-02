@@ -221,37 +221,54 @@ export default function Archive() {
     reader.onload = (e) => {
       try {
         const content = e.target?.result as string;
-        const data = JSON.parse(content);
+        const data = JSON.parse(content) as unknown;
 
-        // Validate the JSON structure
-        if (!data.entries || !Array.isArray(data.entries)) {
-          throw new Error("Invalid file format");
+        // Type guard: validate the JSON structure
+        if (
+          !data ||
+          typeof data !== "object" ||
+          !("entries" in data) ||
+          !Array.isArray(data.entries)
+        ) {
+          throw new Error("Invalid file format: missing or invalid entries array");
         }
 
+        // Type-safe version check
+        // Note: We use Entry[] and MonthlyReflection[] here, but validation happens in import functions
+        // This is safe because importEntries/importMonthlyReflections validate the data
+        const importData = data as {
+          version?: string;
+          entries: Entry[];
+          monthlyReflections?: MonthlyReflection[];
+          yearlyReviews?: Array<unknown>; // Will be validated in importYearlyReviews
+        };
+
         // Check version compatibility (optional, backward compatible)
-        if (data.version) {
-          const [major] = data.version.split(".").map(Number);
+        if (importData.version) {
+          const [major] = importData.version.split(".").map(Number);
           const [currentMajor] = DATA_VERSION.split(".").map(Number);
           if (major > currentMajor) {
             throw new Error(
-              `This backup is from a newer version (${data.version}). Please update the app to import it.`
+              `This backup is from a newer version (${importData.version}). Please update the app to import it.`
             );
           }
         }
 
-        // Import the entries
-        const importedEntriesCount = importEntries(data.entries);
+        // Import the entries (validation happens inside importEntries)
+        const importedEntriesCount = importEntries(importData.entries);
 
         // Import monthly reflections if they exist (backward compatible)
+        // Validation happens inside importMonthlyReflections
         let importedMonthlyCount = 0;
-        if (data.monthlyReflections && Array.isArray(data.monthlyReflections)) {
-          importedMonthlyCount = importMonthlyReflections(data.monthlyReflections);
+        if (importData.monthlyReflections && Array.isArray(importData.monthlyReflections)) {
+          importedMonthlyCount = importMonthlyReflections(importData.monthlyReflections);
         }
 
         // Import yearly reviews if they exist (backward compatible)
+        // Validation happens inside importYearlyReviews
         let importedYearlyCount = 0;
-        if (data.yearlyReviews && Array.isArray(data.yearlyReviews)) {
-          importedYearlyCount = importYearlyReviews(data.yearlyReviews);
+        if (importData.yearlyReviews && Array.isArray(importData.yearlyReviews)) {
+          importedYearlyCount = importYearlyReviews(importData.yearlyReviews);
         }
 
         // Build success message

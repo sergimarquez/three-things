@@ -246,7 +246,17 @@ export default function Export() {
                   name="format"
                   value={format.value}
                   checked={exportFormat === format.value}
-                  onChange={(e) => setExportFormat(e.target.value as any)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (
+                      value === "json" ||
+                      value === "csv" ||
+                      value === "txt" ||
+                      value === "markdown"
+                    ) {
+                      setExportFormat(value);
+                    }
+                  }}
                   className="sr-only"
                 />
 

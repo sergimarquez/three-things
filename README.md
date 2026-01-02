@@ -65,6 +65,13 @@ src/
 - **SPA Routing** - Netlify redirects configured for client-side routing with dedicated pages for reviews
 - **Performance** - Memoization with `useMemo` for expensive calculations, debounced search input
 
+### Robustness & Error Handling
+
+- **React Error Boundaries** - Graceful error handling with fallback UI when components crash
+- **localStorage Error Handling** - Detects quota exceeded and disabled storage with user-friendly messages
+- **Data Validation** - Validates data structure on load and import, filters out corrupted entries automatically
+- **Type Safety** - Minimal use of `any` types, strict validation for imported data
+
 ### Type Safety
 
 - Strict TypeScript configuration with comprehensive type definitions

@@ -121,10 +121,16 @@ export function useEntries() {
         }
 
         // Add IDs to old entries that don't have them (before validation)
-        const entriesWithIds = parsedEntries.map((entry: any) => ({
-          ...entry,
-          id: entry.id || `${entry.date}-${entry.time}`,
-        }));
+        // Use unknown type since we're validating next - safer than any
+        const entriesWithIds = parsedEntries.map((entry: unknown) => {
+          const e = entry as Partial<Entry>;
+          return {
+            ...e,
+            id:
+              e.id ||
+              (e.date && e.time ? `${e.date}-${e.time}` : `entry-${Date.now()}-${Math.random()}`),
+          };
+        });
 
         // Validate and filter entries
         const { valid, errors } = validateEntries(entriesWithIds);
@@ -376,8 +382,8 @@ export function useEntries() {
     return newReflections.length;
   };
 
-  const importYearlyReviews = (importedReviews: YearlyReview[]) => {
-    // Validate imported reviews first
+  const importYearlyReviews = (importedReviews: unknown[]) => {
+    // Validate imported reviews first (accepts unknown[] for type safety)
     const { valid: validReviews, errors } = validateYearlyReviews(importedReviews);
 
     if (errors.length > 0) {
