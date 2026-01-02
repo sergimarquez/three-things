@@ -104,16 +104,23 @@ export default function EntryInput() {
       const decemberMonth = `${previousYear}-12`;
       const decemberDismissed = dismissedPromptMonth === decemberMonth;
 
-      // Check if user visited review page today - if so, don't show tomorrow
+      // Check if user visited review page - if visited yesterday or earlier, don't show today
       const reviewVisitedKey = `year-review-visited-${previousYear}`;
       const reviewVisitedDate = localStorage.getItem(reviewVisitedKey);
       const todayStr = format(today, "yyyy-MM-dd");
-      const visitedToday = reviewVisitedDate === todayStr;
-      const visitedYesterday = reviewVisitedDate && reviewVisitedDate !== todayStr;
 
-      // If user visited review page yesterday, don't show today
+      // Parse dates to compare properly
+      let visitedYesterday = false;
+      if (reviewVisitedDate) {
+        const visitedDate = parseISO(reviewVisitedDate);
+        const todayDate = parseISO(todayStr);
+        // Check if visited date is before today (yesterday or earlier)
+        visitedYesterday = visitedDate < todayDate;
+      }
+
+      // If user visited review page yesterday or earlier, don't show today
       if (visitedYesterday) {
-        console.log("❌ Yearly prompt visited yesterday, not showing today");
+        console.log("❌ Yearly prompt visited on", reviewVisitedDate, "- not showing today");
         setShowYearlyReviewBanner(false);
         return;
       }
@@ -126,7 +133,8 @@ export default function EntryInput() {
         isJanuary: today.getMonth() === 0,
         dayOfMonth: today.getDate(),
         entriesCount: entries.length,
-        visitedToday,
+        reviewVisitedDate,
+        todayStr,
         visitedYesterday,
       });
 
@@ -397,6 +405,7 @@ export default function EntryInput() {
                   const year = String(new Date().getFullYear() - 1);
                   const todayStr = format(new Date(), "yyyy-MM-dd");
                   localStorage.setItem(`year-review-visited-${year}`, todayStr);
+                  // Don't hide immediately - let it show for the rest of the day
                 }}
                 className="px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-200 hover:scale-105 text-sm font-medium shadow-sm"
               >
