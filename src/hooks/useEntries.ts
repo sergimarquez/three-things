@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { format, subDays, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { safeSetItem, safeGetItem, type StorageError } from "../utils/storage";
+import {
+  validateEntries,
+  validateMonthlyReflections,
+  validateYearlyReviews,
+  type ValidationError,
+} from "../utils/validation";
 
 export type EntryItem = {
   text: string;
@@ -102,6 +108,7 @@ export function useEntries() {
   const [yearlyReviews, setYearlyReviews] = useState<YearlyReview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [storageError, setStorageError] = useState<StorageError | null>(null);
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
 
   // Load entries from localStorage on mount
   useEffect(() => {
@@ -109,12 +116,26 @@ export function useEntries() {
     if (stored) {
       try {
         const parsedEntries = JSON.parse(stored);
-        // Add IDs to old entries that don't have them
+        if (!Array.isArray(parsedEntries)) {
+          throw new Error("Entries data is not an array");
+        }
+
+        // Add IDs to old entries that don't have them (before validation)
         const entriesWithIds = parsedEntries.map((entry: any) => ({
           ...entry,
           id: entry.id || `${entry.date}-${entry.time}`,
         }));
-        setEntries(entriesWithIds);
+
+        // Validate and filter entries
+        const { valid, errors } = validateEntries(entriesWithIds);
+        setEntries(valid);
+
+        if (errors.length > 0) {
+          setValidationErrors((prev) => [...prev, ...errors]);
+          if (import.meta.env.DEV) {
+            console.warn(`Found ${errors.length} invalid entries:`, errors);
+          }
+        }
       } catch (error) {
         console.error("Failed to parse entries from localStorage:", error);
         setStorageError({
@@ -132,7 +153,20 @@ export function useEntries() {
     if (stored) {
       try {
         const parsedReflections = JSON.parse(stored);
-        setMonthlyReflections(parsedReflections);
+        if (!Array.isArray(parsedReflections)) {
+          throw new Error("Monthly reflections data is not an array");
+        }
+
+        // Validate and filter reflections
+        const { valid, errors } = validateMonthlyReflections(parsedReflections);
+        setMonthlyReflections(valid);
+
+        if (errors.length > 0) {
+          setValidationErrors((prev) => [...prev, ...errors]);
+          if (import.meta.env.DEV) {
+            console.warn(`Found ${errors.length} invalid monthly reflections:`, errors);
+          }
+        }
       } catch (error) {
         console.error("Failed to parse monthly reflections from localStorage:", error);
       }
@@ -146,7 +180,20 @@ export function useEntries() {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        setYearlyReviews(parsed);
+        if (!Array.isArray(parsed)) {
+          throw new Error("Yearly reviews data is not an array");
+        }
+
+        // Validate and filter reviews
+        const { valid, errors } = validateYearlyReviews(parsed);
+        setYearlyReviews(valid);
+
+        if (errors.length > 0) {
+          setValidationErrors((prev) => [...prev, ...errors]);
+          if (import.meta.env.DEV) {
+            console.warn(`Found ${errors.length} invalid yearly reviews:`, errors);
+          }
+        }
       } catch (error) {
         console.error("Failed to parse yearly reviews from localStorage:", error);
       }
@@ -258,9 +305,19 @@ export function useEntries() {
   };
 
   const importEntries = (importedEntries: Entry[]) => {
+    // Validate imported entries first
+    const { valid: validEntries, errors } = validateEntries(importedEntries);
+
+    if (errors.length > 0) {
+      setValidationErrors((prev) => [...prev, ...errors]);
+      if (import.meta.env.DEV) {
+        console.warn(`Found ${errors.length} invalid entries during import:`, errors);
+      }
+    }
+
     // Filter out duplicates based on date and time
     const existingKeys = new Set(entries.map((entry) => `${entry.date}-${entry.time}`));
-    const newEntries = importedEntries.filter(
+    const newEntries = validEntries.filter(
       (entry) => !existingKeys.has(`${entry.date}-${entry.time}`)
     );
 
@@ -285,9 +342,19 @@ export function useEntries() {
   };
 
   const importMonthlyReflections = (importedReflections: MonthlyReflection[]) => {
+    // Validate imported reflections first
+    const { valid: validReflections, errors } = validateMonthlyReflections(importedReflections);
+
+    if (errors.length > 0) {
+      setValidationErrors((prev) => [...prev, ...errors]);
+      if (import.meta.env.DEV) {
+        console.warn(`Found ${errors.length} invalid monthly reflections during import:`, errors);
+      }
+    }
+
     // Filter out duplicates based on month
     const existingMonths = new Set(monthlyReflections.map((r) => r.month));
-    const newReflections = importedReflections.filter(
+    const newReflections = validReflections.filter(
       (reflection) => !existingMonths.has(reflection.month)
     );
 
@@ -310,9 +377,19 @@ export function useEntries() {
   };
 
   const importYearlyReviews = (importedReviews: YearlyReview[]) => {
+    // Validate imported reviews first
+    const { valid: validReviews, errors } = validateYearlyReviews(importedReviews);
+
+    if (errors.length > 0) {
+      setValidationErrors((prev) => [...prev, ...errors]);
+      if (import.meta.env.DEV) {
+        console.warn(`Found ${errors.length} invalid yearly reviews during import:`, errors);
+      }
+    }
+
     // Filter out duplicates based on year
     const existingYears = new Set(yearlyReviews.map((r) => r.year));
-    const newReviews = importedReviews.filter((review) => !existingYears.has(review.year));
+    const newReviews = validReviews.filter((review) => !existingYears.has(review.year));
 
     // Combine with existing reviews
     const combinedReviews = [...yearlyReviews, ...newReviews];
@@ -706,5 +783,8 @@ export function useEntries() {
     // Error state
     storageError,
     clearStorageError: () => setStorageError(null),
+    // Validation errors
+    validationErrors,
+    clearValidationErrors: () => setValidationErrors([]),
   };
 }

@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Circle, BookOpen, TrendingUp, Download, Info } from "lucide-react";
-import { DATA_VERSION } from "../hooks/useEntries";
+import { DATA_VERSION, useEntries } from "../hooks/useEntries";
+import ValidationNotice from "../components/ValidationNotice";
 
 export default function Layout() {
   const location = useLocation();
   const [forceUpdate, setForceUpdate] = useState(0);
+  const { validationErrors, clearValidationErrors } = useEntries();
 
   // Listen for entry additions to force re-render
   useEffect(() => {
@@ -67,6 +69,7 @@ export default function Layout() {
       </header>
 
       <main className="flex-1 px-6 py-8">
+        <ValidationNotice errors={validationErrors} onDismiss={clearValidationErrors} />
         <Outlet />
       </main>
 
