@@ -55,32 +55,13 @@ export default function EntryInput() {
       const shouldShow = shouldShowMonthlyReviewPrompt();
       const previousMonth = getPreviousMonth();
 
-      if (import.meta.env.DEV) {
-        console.log("Monthly prompt check:", {
-          shouldShow,
-          previousMonth,
-          dismissedPromptMonth,
-          isFirstOfMonth: new Date().getDate() === 1,
-          entriesCount: entries.length,
-        });
-      }
-
       if (shouldShow) {
         if (dismissedPromptMonth !== previousMonth) {
-          if (import.meta.env.DEV) {
-            console.log("✅ Showing monthly review prompt for", previousMonth);
-          }
           setShowMonthlyReviewPrompt(true);
         } else {
-          if (import.meta.env.DEV) {
-            console.log("❌ Monthly prompt dismissed for", previousMonth);
-          }
           setShowMonthlyReviewPrompt(false);
         }
       } else {
-        if (import.meta.env.DEV) {
-          console.log("❌ Monthly prompt should not show");
-        }
         setShowMonthlyReviewPrompt(false);
       }
     };
@@ -128,44 +109,17 @@ export default function EntryInput() {
 
       // If user visited review page yesterday or earlier, don't show today
       if (visitedYesterday) {
-        if (import.meta.env.DEV) {
-          console.log("❌ Yearly prompt visited on", reviewVisitedDate, "- not showing today");
-        }
         setShowYearlyReviewBanner(false);
         return;
       }
 
-      if (import.meta.env.DEV) {
-        console.log("Yearly prompt check:", {
-          shouldShow,
-          previousYear,
-          dismissedYearBanner,
-          decemberDismissed,
-          isJanuary: today.getMonth() === 0,
-          dayOfMonth: today.getDate(),
-          entriesCount: entries.length,
-          reviewVisitedDate,
-          todayStr,
-          visitedYesterday,
-        });
-      }
-
       if (shouldShow) {
         if (dismissedYearBanner !== previousYear && !visitedYesterday) {
-          if (import.meta.env.DEV) {
-            console.log("✅ Showing yearly review prompt for", previousYear);
-          }
           setShowYearlyReviewBanner(true);
         } else {
-          if (import.meta.env.DEV) {
-            console.log("❌ Yearly prompt dismissed for", previousYear);
-          }
           setShowYearlyReviewBanner(false);
         }
       } else {
-        if (import.meta.env.DEV) {
-          console.log("❌ Yearly prompt should not show");
-        }
         setShowYearlyReviewBanner(false);
       }
     };
