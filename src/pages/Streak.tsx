@@ -1,5 +1,17 @@
 import { useState } from "react";
-import { format, parseISO, differenceInDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday, subDays, differenceInCalendarDays, startOfMonth, endOfMonth } from "date-fns";
+import {
+  format,
+  parseISO,
+  differenceInDays,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  isToday,
+  subDays,
+  differenceInCalendarDays,
+  startOfMonth,
+  endOfMonth,
+} from "date-fns";
 import { useEntries } from "../hooks/useEntries";
 import { TrendingUp, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -9,14 +21,16 @@ export default function Progress() {
   const allYearsWithEntries = getYearsWithEntries();
   const currentYear = new Date().getFullYear();
   // Only show button if there's at least one completed year (not the current year)
-  const completedYears = allYearsWithEntries.filter(year => Number(year) < currentYear);
+  const completedYears = allYearsWithEntries.filter((year) => Number(year) < currentYear);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
   // Calculate streak
   const calculateStreak = () => {
     if (entries.length === 0) return 0;
 
-    const sortedEntries = [...entries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const sortedEntries = [...entries].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
     const today = new Date();
     let streak = 0;
 
@@ -38,7 +52,9 @@ export default function Progress() {
   const calculateLongestStreak = () => {
     if (entries.length === 0) return 0;
 
-    const sortedEntries = [...entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const sortedEntries = [...entries].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
     let maxStreak = 1;
     let currentStreak = 1;
 
@@ -58,28 +74,22 @@ export default function Progress() {
     return maxStreak;
   };
 
-
-
   // Get weekly activity
   const getWeeklyActivity = () => {
     const weekStart = startOfWeek(new Date());
     const weekEnd = endOfWeek(new Date());
     const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-    return daysOfWeek.map(day => {
-      const hasEntry = entries.some(entry =>
-        differenceInDays(parseISO(entry.date), day) === 0
-      );
+    return daysOfWeek.map((day) => {
+      const hasEntry = entries.some((entry) => differenceInDays(parseISO(entry.date), day) === 0);
       return {
-        day: format(day, 'EEE'),
+        day: format(day, "EEE"),
         date: day,
         hasEntry,
-        isToday: isToday(day)
+        isToday: isToday(day),
       };
     });
   };
-
-
 
   // Get monthly progress
   const getMonthlyProgress = () => {
@@ -88,21 +98,19 @@ export default function Progress() {
     const daysInMonth = differenceInCalendarDays(monthEnd, monthStart) + 1;
     const daysSoFar = differenceInCalendarDays(new Date(), monthStart) + 1;
 
-    const monthlyEntries = entries.filter(entry => {
+    const monthlyEntries = entries.filter((entry) => {
       const entryDate = parseISO(entry.date);
       return entryDate >= monthStart && entryDate <= monthEnd;
     });
 
     return {
-      monthName: format(new Date(), 'MMMM'),
+      monthName: format(new Date(), "MMMM"),
       entriesThisMonth: monthlyEntries.length,
       daysSoFar,
       daysInMonth,
-      percentage: Math.round((monthlyEntries.length / daysSoFar) * 100)
+      percentage: Math.round((monthlyEntries.length / daysSoFar) * 100),
     };
   };
-
-
 
   const streak = calculateStreak();
   const longestStreak = calculateLongestStreak();
@@ -117,9 +125,7 @@ export default function Progress() {
             <TrendingUp size={24} className="text-stone-400" />
           </div>
 
-          <h2 className="text-xl font-medium text-stone-900 mb-2">
-            No progress to show yet
-          </h2>
+          <h2 className="text-xl font-medium text-stone-900 mb-2">No progress to show yet</h2>
           <p className="text-stone-600 mb-6">
             Start your reflection practice to track your journey
           </p>
@@ -141,9 +147,7 @@ export default function Progress() {
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-medium text-stone-900 mb-2">Progress</h1>
-          <p className="text-stone-600">
-            Your reflection practice over time
-          </p>
+          <p className="text-stone-600">Your reflection practice over time</p>
         </div>
         {completedYears.length > 0 && (
           <Link
@@ -197,15 +201,16 @@ export default function Progress() {
                   <div
                     className={`
                       w-8 h-8 rounded-lg mx-auto flex items-center justify-center text-xs font-medium
-                      ${day.hasEntry
-                        ? 'bg-stone-900 text-white'
-                        : day.isToday
-                          ? 'border-2 border-stone-300 text-stone-600'
-                          : 'bg-stone-100 text-stone-400'
+                      ${
+                        day.hasEntry
+                          ? "bg-stone-900 text-white"
+                          : day.isToday
+                          ? "border-2 border-stone-300 text-stone-600"
+                          : "bg-stone-100 text-stone-400"
                       }
                     `}
                   >
-                    {format(day.date, 'd')}
+                    {format(day.date, "d")}
                   </div>
                 </div>
               ))}
@@ -224,9 +229,7 @@ export default function Progress() {
                 <span className="text-stone-600">
                   {monthlyProgress.entriesThisMonth} of {monthlyProgress.daysSoFar} days so far
                 </span>
-                <span className="font-medium text-stone-900">
-                  {monthlyProgress.percentage}%
-                </span>
+                <span className="font-medium text-stone-900">{monthlyProgress.percentage}%</span>
               </div>
 
               <div className="w-full bg-stone-200 rounded-full h-2">
@@ -240,11 +243,10 @@ export default function Progress() {
                 {monthlyProgress.percentage >= 90
                   ? "Outstanding consistency this month"
                   : monthlyProgress.percentage >= 70
-                    ? "Great progress this month"
-                    : monthlyProgress.percentage >= 50
-                      ? "Good momentum building"
-                      : "Every day counts — keep going"
-                }
+                  ? "Great progress this month"
+                  : monthlyProgress.percentage >= 50
+                  ? "Good momentum building"
+                  : "Every day counts — keep going"}
               </p>
             </div>
           </div>
@@ -259,16 +261,20 @@ export default function Progress() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setSelectedMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1))}
+                onClick={() =>
+                  setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1))
+                }
                 className="p-1 hover:bg-stone-100 rounded transition-colors"
               >
                 ←
               </button>
               <span className="text-sm text-stone-600 min-w-[80px] text-center">
-                {format(selectedMonth, 'MMM yyyy')}
+                {format(selectedMonth, "MMM yyyy")}
               </span>
               <button
-                onClick={() => setSelectedMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1))}
+                onClick={() =>
+                  setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1))
+                }
                 className="p-1 hover:bg-stone-100 rounded transition-colors"
                 disabled={isToday(selectedMonth)}
               >
@@ -279,8 +285,11 @@ export default function Progress() {
 
           <div className="grid grid-cols-7 gap-0.5 flex-1">
             {/* Day headers */}
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-              <div key={day} className="text-center text-xs font-medium text-stone-500 py-1">
+            {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
+              <div
+                key={`day-header-${index}`}
+                className="text-center text-xs font-medium text-stone-500 py-1"
+              >
                 {day}
               </div>
             ))}
@@ -296,7 +305,7 @@ export default function Progress() {
                 const currentDate = new Date(startDate);
                 currentDate.setDate(startDate.getDate() + i);
 
-                const hasEntry = entries.some(entry => {
+                const hasEntry = entries.some((entry) => {
                   const entryDate = parseISO(entry.date);
                   return differenceInDays(entryDate, currentDate) === 0;
                 });
@@ -308,11 +317,12 @@ export default function Progress() {
                     key={i}
                     className={`
                       w-8 h-8 rounded-lg mx-auto flex items-center justify-center text-xs font-medium
-                      ${isCurrentMonth
-                        ? hasEntry
-                          ? 'bg-stone-900 text-white'
-                          : 'text-stone-600'
-                        : 'text-stone-300'
+                      ${
+                        isCurrentMonth
+                          ? hasEntry
+                            ? "bg-stone-900 text-white"
+                            : "text-stone-600"
+                          : "text-stone-300"
                       }
                     `}
                   >
@@ -332,7 +342,6 @@ export default function Progress() {
           </div>
         </div>
       </div>
-
     </div>
   );
-} 
+}

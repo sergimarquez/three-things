@@ -4,8 +4,19 @@ import { useNavigate } from "react-router-dom";
 import { useEntries } from "../hooks/useEntries";
 import type { EntryItem } from "../hooks/useEntries";
 import { Link } from "react-router-dom";
-import { Star, BookOpen, TrendingUp, ArrowRight, Check, Calendar, X, Sparkles } from "lucide-react";
+import {
+  Star,
+  BookOpen,
+  TrendingUp,
+  ArrowRight,
+  Check,
+  Calendar,
+  X,
+  Sparkles,
+  AlertCircle,
+} from "lucide-react";
 import LocalStorageNotice from "./LocalStorageNotice";
+import { safeGetItem, safeSetItem } from "../utils/storage";
 
 const placeholders = [
   "Something you're grateful for today...",
@@ -31,19 +42,19 @@ export default function EntryInput() {
     shouldShowYearlyReviewPrompt,
     getPreviousMonth,
     isLoading,
+    storageError,
+    clearStorageError,
   } = useEntries();
   const [items, setItems] = useState<EntryItem[]>([{ text: "" }, { text: "" }, { text: "" }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [showMonthlyReviewPrompt, setShowMonthlyReviewPrompt] = useState(false);
   const [dismissedPromptMonth, setDismissedPromptMonth] = useState<string | null>(() => {
-    const stored = localStorage.getItem("three-things-dismissed-month");
-    return stored || null;
+    return safeGetItem("three-things-dismissed-month");
   });
   const [showYearlyReviewBanner, setShowYearlyReviewBanner] = useState(false);
   const [dismissedYearBanner, setDismissedYearBanner] = useState<string | null>(() => {
-    const stored = localStorage.getItem("three-things-dismissed-year");
-    return stored || null;
+    return safeGetItem("three-things-dismissed-year");
   });
 
   // Check if we should show monthly review prompt
@@ -90,12 +101,10 @@ export default function EntryInput() {
       const shouldShow = shouldShowYearlyReviewPrompt();
       const today = new Date();
       const previousYear = String(today.getFullYear() - 1);
-      const decemberMonth = `${previousYear}-12`;
-      const decemberDismissed = dismissedPromptMonth === decemberMonth;
 
       // Check if user visited review page - if visited yesterday or earlier, don't show today
       const reviewVisitedKey = `year-review-visited-${previousYear}`;
-      const reviewVisitedDate = localStorage.getItem(reviewVisitedKey);
+      const reviewVisitedDate = safeGetItem(reviewVisitedKey);
       const todayStr = format(today, "yyyy-MM-dd");
 
       // Parse dates to compare properly
@@ -172,30 +181,37 @@ export default function EntryInput() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
+    clearStorageError(); // Clear any previous errors
 
-    // Save with today's date
-    const today = new Date();
-    const entryData = {
-      date: format(today, "yyyy-MM-dd"),
-      time: format(today, "HH:mm"),
-      items: items as [EntryItem, EntryItem, EntryItem],
-    };
+    try {
+      // Save with today's date
+      const today = new Date();
+      const entryData = {
+        date: format(today, "yyyy-MM-dd"),
+        time: format(today, "HH:mm"),
+        items: items as [EntryItem, EntryItem, EntryItem],
+      };
 
-    saveEntry(entryData);
+      saveEntry(entryData);
 
-    // Dispatch custom event to notify Layout of the change
-    window.dispatchEvent(new CustomEvent("entryAdded"));
+      // Dispatch custom event to notify Layout of the change
+      window.dispatchEvent(new CustomEvent("entryAdded"));
 
-    // Show success animation
-    setTimeout(() => {
-      setShowSuccessAnimation(true);
-    }, 300);
+      // Show success animation
+      setTimeout(() => {
+        setShowSuccessAnimation(true);
+      }, 300);
 
-    // Reset form after animation completes
-    setTimeout(() => {
-      setItems([{ text: "" }, { text: "" }, { text: "" }]);
+      // Reset form after animation completes
+      setTimeout(() => {
+        setItems([{ text: "" }, { text: "" }, { text: "" }]);
+        setIsSubmitting(false);
+      }, 2000);
+    } catch {
+      // Error is already set in storageError state by saveEntry
       setIsSubmitting(false);
-    }, 2000);
+      // Don't show success animation if save failed
+    }
   };
 
   // Check how many fields are filled
@@ -207,6 +223,30 @@ export default function EntryInput() {
     return (
       <>
         <LocalStorageNotice entriesCount={entries.length} />
+        {/* Storage Error Banner */}
+        {storageError && (
+          <div className="max-w-2xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+            <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-medium text-red-900 mb-1">Unable to Save</h3>
+              <p className="text-sm text-red-800 mb-3">{storageError.message}</p>
+              <div className="flex gap-2">
+                <Link
+                  to="/export"
+                  className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                >
+                  Export Backup
+                </Link>
+                <button
+                  onClick={clearStorageError}
+                  className="px-3 py-1.5 border border-red-300 text-red-700 rounded-lg hover:bg-red-100 transition-colors text-sm"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="max-w-2xl mx-auto min-h-[calc(100vh-200px)] flex items-center justify-center">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
@@ -267,7 +307,7 @@ export default function EntryInput() {
                     const year = String(new Date().getFullYear() - 1);
                     setShowYearlyReviewBanner(false);
                     setDismissedYearBanner(year);
-                    localStorage.setItem("three-things-dismissed-year", year);
+                    safeSetItem("three-things-dismissed-year", year);
                   }}
                   className="px-4 py-2 text-stone-500 hover:text-stone-700 text-sm transition-colors"
                 >
@@ -306,7 +346,7 @@ export default function EntryInput() {
                   const month = getPreviousMonth();
                   setShowMonthlyReviewPrompt(false);
                   setDismissedPromptMonth(month);
-                  localStorage.setItem("three-things-dismissed-month", month);
+                  safeSetItem("three-things-dismissed-month", month);
                 }}
                 className="p-2 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-blue-100"
               >
@@ -352,6 +392,31 @@ export default function EntryInput() {
 
   return (
     <div className="max-w-2xl mx-auto min-h-[calc(100vh-200px)] flex flex-col justify-center">
+      {/* Storage Error Banner */}
+      {storageError && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+          <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="font-medium text-red-900 mb-1">Unable to Save</h3>
+            <p className="text-sm text-red-800 mb-3">{storageError.message}</p>
+            <div className="flex gap-2">
+              <Link
+                to="/export"
+                className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+              >
+                Export Backup
+              </Link>
+              <button
+                onClick={clearStorageError}
+                className="px-3 py-1.5 border border-red-300 text-red-700 rounded-lg hover:bg-red-100 transition-colors text-sm"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Yearly Review - Special once-a-year reminder */}
       {showYearlyReviewBanner && (
         <div className="mb-8 text-center">
@@ -376,7 +441,7 @@ export default function EntryInput() {
                   // Track that user visited review page today (will auto-dismiss tomorrow)
                   const year = String(new Date().getFullYear() - 1);
                   const todayStr = format(new Date(), "yyyy-MM-dd");
-                  localStorage.setItem(`year-review-visited-${year}`, todayStr);
+                  safeSetItem(`year-review-visited-${year}`, todayStr);
                   // Don't hide immediately - let it show for the rest of the day
                 }}
                 className="px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-200 hover:scale-105 text-sm font-medium shadow-sm"

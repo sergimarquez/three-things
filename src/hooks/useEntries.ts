@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { format, subDays, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { safeSetItem, safeGetItem, type StorageError } from "../utils/storage";
 
 export type EntryItem = {
   text: string;
@@ -100,10 +101,11 @@ export function useEntries() {
   const [monthlyReflections, setMonthlyReflections] = useState<MonthlyReflection[]>([]);
   const [yearlyReviews, setYearlyReviews] = useState<YearlyReview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [storageError, setStorageError] = useState<StorageError | null>(null);
 
   // Load entries from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = safeGetItem(STORAGE_KEY);
     if (stored) {
       try {
         const parsedEntries = JSON.parse(stored);
@@ -115,6 +117,10 @@ export function useEntries() {
         setEntries(entriesWithIds);
       } catch (error) {
         console.error("Failed to parse entries from localStorage:", error);
+        setStorageError({
+          type: "unknown",
+          message: "Failed to load your entries. Data may be corrupted. Please check your backup.",
+        });
       }
     }
     setIsLoading(false);
@@ -122,7 +128,7 @@ export function useEntries() {
 
   // Load monthly reflections from localStorage on mount
   const loadMonthlyReflections = () => {
-    const stored = localStorage.getItem(MONTHLY_REFLECTIONS_KEY);
+    const stored = safeGetItem(MONTHLY_REFLECTIONS_KEY);
     if (stored) {
       try {
         const parsedReflections = JSON.parse(stored);
@@ -136,7 +142,7 @@ export function useEntries() {
   };
 
   const loadYearlyReviews = () => {
-    const stored = localStorage.getItem(YEARLY_REVIEWS_KEY);
+    const stored = safeGetItem(YEARLY_REVIEWS_KEY);
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
@@ -169,21 +175,50 @@ export function useEntries() {
     };
     const updatedEntries = [newEntry, ...entries];
     setEntries(updatedEntries);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedEntries));
+
+    const result = safeSetItem(STORAGE_KEY, JSON.stringify(updatedEntries));
+    if (!result.success && result.error) {
+      setStorageError(result.error);
+      // Revert the state change if save failed
+      setEntries(entries);
+      throw new Error(result.error.message);
+    } else {
+      setStorageError(null);
+    }
   };
 
   const updateEntry = (id: string, updatedEntry: Omit<Entry, "id">) => {
     const updatedEntries = entries.map((entry) =>
       entry.id === id ? { ...updatedEntry, id } : entry
     );
+    const previousEntries = entries;
     setEntries(updatedEntries);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedEntries));
+
+    const result = safeSetItem(STORAGE_KEY, JSON.stringify(updatedEntries));
+    if (!result.success && result.error) {
+      setStorageError(result.error);
+      // Revert the state change if save failed
+      setEntries(previousEntries);
+      throw new Error(result.error.message);
+    } else {
+      setStorageError(null);
+    }
   };
 
   const deleteEntry = (id: string) => {
     const updatedEntries = entries.filter((entry) => entry.id !== id);
+    const previousEntries = entries;
     setEntries(updatedEntries);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedEntries));
+
+    const result = safeSetItem(STORAGE_KEY, JSON.stringify(updatedEntries));
+    if (!result.success && result.error) {
+      setStorageError(result.error);
+      // Revert the state change if save failed
+      setEntries(previousEntries);
+      throw new Error(result.error.message);
+    } else {
+      setStorageError(null);
+    }
   };
 
   const hasTodayEntry = () => {
@@ -209,8 +244,17 @@ export function useEntries() {
   const addFakeData = () => {
     const fakeEntries = generateFakeData();
     const combinedEntries = [...fakeEntries, ...entries];
+    const previousEntries = entries;
     setEntries(combinedEntries);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(combinedEntries));
+
+    const result = safeSetItem(STORAGE_KEY, JSON.stringify(combinedEntries));
+    if (!result.success && result.error) {
+      setStorageError(result.error);
+      setEntries(previousEntries);
+      throw new Error(result.error.message);
+    } else {
+      setStorageError(null);
+    }
   };
 
   const importEntries = (importedEntries: Entry[]) => {
@@ -225,8 +269,17 @@ export function useEntries() {
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
+    const previousEntries = entries;
     setEntries(combinedEntries);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(combinedEntries));
+
+    const result = safeSetItem(STORAGE_KEY, JSON.stringify(combinedEntries));
+    if (!result.success && result.error) {
+      setStorageError(result.error);
+      setEntries(previousEntries);
+      throw new Error(result.error.message);
+    } else {
+      setStorageError(null);
+    }
 
     return newEntries.length; // Return count of newly imported entries
   };
@@ -241,8 +294,17 @@ export function useEntries() {
     // Combine with existing reflections
     const combinedReflections = [...monthlyReflections, ...newReflections];
 
+    const previousReflections = monthlyReflections;
     setMonthlyReflections(combinedReflections);
-    localStorage.setItem(MONTHLY_REFLECTIONS_KEY, JSON.stringify(combinedReflections));
+
+    const result = safeSetItem(MONTHLY_REFLECTIONS_KEY, JSON.stringify(combinedReflections));
+    if (!result.success && result.error) {
+      setStorageError(result.error);
+      setMonthlyReflections(previousReflections);
+      throw new Error(result.error.message);
+    } else {
+      setStorageError(null);
+    }
 
     return newReflections.length;
   };
@@ -255,8 +317,17 @@ export function useEntries() {
     // Combine with existing reviews
     const combinedReviews = [...yearlyReviews, ...newReviews];
 
+    const previousReviews = yearlyReviews;
     setYearlyReviews(combinedReviews);
-    localStorage.setItem(YEARLY_REVIEWS_KEY, JSON.stringify(combinedReviews));
+
+    const result = safeSetItem(YEARLY_REVIEWS_KEY, JSON.stringify(combinedReviews));
+    if (!result.success && result.error) {
+      setStorageError(result.error);
+      setYearlyReviews(previousReviews);
+      throw new Error(result.error.message);
+    } else {
+      setStorageError(null);
+    }
 
     return newReviews.length;
   };
@@ -286,8 +357,17 @@ export function useEntries() {
       updatedReflections = [...monthlyReflections, newReflection];
     }
 
+    const previousReflections = monthlyReflections;
     setMonthlyReflections(updatedReflections);
-    localStorage.setItem(MONTHLY_REFLECTIONS_KEY, JSON.stringify(updatedReflections));
+
+    const result = safeSetItem(MONTHLY_REFLECTIONS_KEY, JSON.stringify(updatedReflections));
+    if (!result.success && result.error) {
+      setStorageError(result.error);
+      setMonthlyReflections(previousReflections);
+      throw new Error(result.error.message);
+    } else {
+      setStorageError(null);
+    }
   };
 
   // Yearly Review functions
@@ -312,8 +392,17 @@ export function useEntries() {
       updatedReviews = [...yearlyReviews, newReview];
     }
 
+    const previousReviews = yearlyReviews;
     setYearlyReviews(updatedReviews);
-    localStorage.setItem(YEARLY_REVIEWS_KEY, JSON.stringify(updatedReviews));
+
+    const result = safeSetItem(YEARLY_REVIEWS_KEY, JSON.stringify(updatedReviews));
+    if (!result.success && result.error) {
+      setStorageError(result.error);
+      setYearlyReviews(previousReviews);
+      throw new Error(result.error.message);
+    } else {
+      setStorageError(null);
+    }
   };
 
   const getYearlyReview = (year: string) => {
@@ -450,8 +539,17 @@ export function useEntries() {
     const updatedReflections = monthlyReflections.map((reflection) =>
       reflection.id === id ? { ...reflection, ...updates } : reflection
     );
+    const previousReflections = monthlyReflections;
     setMonthlyReflections(updatedReflections);
-    localStorage.setItem(MONTHLY_REFLECTIONS_KEY, JSON.stringify(updatedReflections));
+
+    const result = safeSetItem(MONTHLY_REFLECTIONS_KEY, JSON.stringify(updatedReflections));
+    if (!result.success && result.error) {
+      setStorageError(result.error);
+      setMonthlyReflections(previousReflections);
+      throw new Error(result.error.message);
+    } else {
+      setStorageError(null);
+    }
   };
 
   const getMonthlyReflection = (month: string) => {
@@ -530,7 +628,7 @@ export function useEntries() {
     // (because monthly review banner won't show after Jan 1st)
     if (dayOfMonth >= 2) {
       // Check if December monthly prompt was dismissed
-      const dismissedMonth = localStorage.getItem("three-things-dismissed-month");
+      const dismissedMonth = safeGetItem("three-things-dismissed-month");
       const decemberDismissed = dismissedMonth === decemberMonth;
 
       // Show if December review is done OR if user dismissed the December prompt
@@ -605,5 +703,8 @@ export function useEntries() {
     getYearSummary,
     // Loading state
     isLoading,
+    // Error state
+    storageError,
+    clearStorageError: () => setStorageError(null),
   };
 }
