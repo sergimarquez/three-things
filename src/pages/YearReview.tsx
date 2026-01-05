@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import type { ReactElement } from "react";
 import { format, parseISO } from "date-fns";
 import { useEntries } from "../hooks/useEntries";
@@ -21,14 +21,17 @@ export default function YearReview() {
   const isJanuary = today.getMonth() === 0;
   const dayOfMonth = today.getDate();
 
-  // Filter out current year - you can only review completed years
-  // Also filter to only include years that have at least one monthly review
-  const yearsWithEntries = allYearsWithEntries
-    .filter((year) => Number(year) < currentYear)
-    .filter((year) => {
-      // Check if this year has at least one monthly reflection
-      return monthlyReflections.some((reflection) => reflection.month.startsWith(year));
-    });
+  // Memoize years with entries - only recalculate when allYearsWithEntries, currentYear, or monthlyReflections change
+  const yearsWithEntries = useMemo(
+    () =>
+      allYearsWithEntries
+        .filter((year) => Number(year) < currentYear)
+        .filter((year) => {
+          // Check if this year has at least one monthly reflection
+          return monthlyReflections.some((reflection) => reflection.month.startsWith(year));
+        }),
+    [allYearsWithEntries, currentYear, monthlyReflections]
+  );
 
   // If we're in the first week of January, default to previous year for yearly review
   const previousYear = String(currentYear - 1);
@@ -62,22 +65,25 @@ export default function YearReview() {
     reflection.month.startsWith(selectedYear)
   );
 
-  // Group top moments by month
-  const momentsByMonth = topMoments.reduce((acc, moment) => {
-    const monthKey = format(parseISO(moment.date), "MMMM yyyy");
-    if (!acc[monthKey]) {
-      acc[monthKey] = [];
-    }
-    acc[monthKey].push(moment);
-    return acc;
-  }, {} as Record<string, typeof topMoments>);
+  // Memoize grouping and sorting - only recalculate when topMoments change
+  const { momentsByMonth, sortedMonths } = useMemo(() => {
+    const grouped = topMoments.reduce((acc, moment) => {
+      const monthKey = format(parseISO(moment.date), "MMMM yyyy");
+      if (!acc[monthKey]) {
+        acc[monthKey] = [];
+      }
+      acc[monthKey].push(moment);
+      return acc;
+    }, {} as Record<string, typeof topMoments>);
 
-  // Sort months chronologically
-  const sortedMonths = Object.keys(momentsByMonth).sort((a, b) => {
-    return (
-      parseISO(momentsByMonth[a][0].date).getTime() - parseISO(momentsByMonth[b][0].date).getTime()
-    );
-  });
+    const sorted = Object.keys(grouped).sort((a, b) => {
+      return (
+        parseISO(grouped[a][0].date).getTime() - parseISO(grouped[b][0].date).getTime()
+      );
+    });
+
+    return { momentsByMonth: grouped, sortedMonths: sorted };
+  }, [topMoments]);
 
   const handleSave = () => {
     saveYearlyReview({

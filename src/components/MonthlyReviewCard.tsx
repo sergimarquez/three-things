@@ -1,4 +1,5 @@
 import { format, parseISO } from "date-fns";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useEntries } from "../hooks/useEntries";
 import { Star, Edit3, Calendar } from "lucide-react";
@@ -21,30 +22,34 @@ export default function MonthlyReviewCard({ reflection }: Props) {
   const monthDate = parseISO(`${reflection.month}-01`);
   const monthName = format(monthDate, "MMMM yyyy");
 
-  // Get the actual favorite items from entries
-  const favoriteItems = reflection.selectedFavorites
-    .map((key) => {
-      // Key format is "entryId-itemIndex", but entryId contains dashes
-      // So we need to split from the end - last part is itemIndex
-      const lastDashIndex = key.lastIndexOf("-");
-      if (lastDashIndex === -1) return null;
+  // Memoize favorite items - only recalculate when entries or selectedFavorites change
+  const favoriteItems = useMemo(
+    () =>
+      reflection.selectedFavorites
+        .map((key) => {
+          // Key format is "entryId-itemIndex", but entryId contains dashes
+          // So we need to split from the end - last part is itemIndex
+          const lastDashIndex = key.lastIndexOf("-");
+          if (lastDashIndex === -1) return null;
 
-      const entryId = key.substring(0, lastDashIndex);
-      const itemIndexStr = key.substring(lastDashIndex + 1);
-      const itemIndex = parseInt(itemIndexStr);
+          const entryId = key.substring(0, lastDashIndex);
+          const itemIndexStr = key.substring(lastDashIndex + 1);
+          const itemIndex = parseInt(itemIndexStr);
 
-      if (isNaN(itemIndex)) return null;
+          if (isNaN(itemIndex)) return null;
 
-      const entry = entries.find((e) => e.id === entryId);
-      if (entry && entry.items[itemIndex] !== undefined) {
-        return {
-          text: entry.items[itemIndex].text,
-          date: entry.date,
-        };
-      }
-      return null;
-    })
-    .filter(Boolean) as Array<{ text: string; date: string }>;
+          const entry = entries.find((e) => e.id === entryId);
+          if (entry && entry.items[itemIndex] !== undefined) {
+            return {
+              text: entry.items[itemIndex].text,
+              date: entry.date,
+            };
+          }
+          return null;
+        })
+        .filter(Boolean) as Array<{ text: string; date: string }>,
+    [entries, reflection.selectedFavorites]
+  );
 
   const stats = {
     daysPracticed: monthEntries.length,

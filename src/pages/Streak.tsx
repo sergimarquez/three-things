@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   format,
   parseISO,
@@ -21,11 +21,15 @@ export default function Progress() {
   const allYearsWithEntries = getYearsWithEntries();
   const currentYear = new Date().getFullYear();
   // Only show button if there's at least one completed year (not the current year)
-  const completedYears = allYearsWithEntries.filter((year) => Number(year) < currentYear);
+  // Memoize: only recalculate when allYearsWithEntries or currentYear changes
+  const completedYears = useMemo(
+    () => allYearsWithEntries.filter((year) => Number(year) < currentYear),
+    [allYearsWithEntries, currentYear]
+  );
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
-  // Calculate streak
-  const calculateStreak = () => {
+  // Memoize streak calculation - only recalculate when entries change
+  const streak = useMemo(() => {
     if (entries.length === 0) return 0;
 
     const sortedEntries = [...entries].sort(
@@ -46,10 +50,10 @@ export default function Progress() {
     }
 
     return streak;
-  };
+  }, [entries]);
 
-  // Calculate longest streak ever
-  const calculateLongestStreak = () => {
+  // Memoize longest streak calculation - only recalculate when entries change
+  const longestStreak = useMemo(() => {
     if (entries.length === 0) return 0;
 
     const sortedEntries = [...entries].sort(
@@ -72,10 +76,10 @@ export default function Progress() {
     }
 
     return maxStreak;
-  };
+  }, [entries]);
 
-  // Get weekly activity
-  const getWeeklyActivity = () => {
+  // Memoize weekly activity - only recalculate when entries change
+  const weeklyActivity = useMemo(() => {
     const weekStart = startOfWeek(new Date());
     const weekEnd = endOfWeek(new Date());
     const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
@@ -89,10 +93,10 @@ export default function Progress() {
         isToday: isToday(day),
       };
     });
-  };
+  }, [entries]);
 
-  // Get monthly progress
-  const getMonthlyProgress = () => {
+  // Memoize monthly progress - only recalculate when entries change
+  const monthlyProgress = useMemo(() => {
     const monthStart = startOfMonth(new Date());
     const monthEnd = endOfMonth(new Date());
     const daysInMonth = differenceInCalendarDays(monthEnd, monthStart) + 1;
@@ -110,12 +114,7 @@ export default function Progress() {
       daysInMonth,
       percentage: Math.round((monthlyEntries.length / daysSoFar) * 100),
     };
-  };
-
-  const streak = calculateStreak();
-  const longestStreak = calculateLongestStreak();
-  const weeklyActivity = getWeeklyActivity();
-  const monthlyProgress = getMonthlyProgress();
+  }, [entries]);
 
   if (entries.length === 0) {
     return (
