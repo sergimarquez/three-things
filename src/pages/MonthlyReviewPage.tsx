@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 import { useEntries } from "../hooks/useEntries";
-import type { EntryItem } from "../hooks/useEntries";
+import type { EntryItem, Entry } from "../hooks/useEntries";
 import { Star, Check, ArrowLeft, Loader2 } from "lucide-react";
 
 export default function MonthlyReviewPage() {
@@ -50,7 +50,7 @@ export default function MonthlyReviewPage() {
     longestStreak: calculateLongestStreak(monthEntries),
   };
 
-  function calculateLongestStreak(entries: any[]) {
+  function calculateLongestStreak(entries: Entry[]) {
     if (entries.length === 0) return 0;
 
     const sorted = [...entries].sort(
