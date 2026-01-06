@@ -132,8 +132,18 @@ export function useEntries() {
           };
         });
 
-        // Validate and filter entries
+        // Validate and filter entries (repair happens inside validateEntries)
         const { valid, errors } = validateEntries(entriesWithIds);
+
+        // If entries were repaired, save them back to localStorage
+        // This ensures corrupted entries are permanently fixed
+        if (valid.length > 0 && errors.some((e) => e.message.includes("repaired automatically"))) {
+          const result = safeSetItem(STORAGE_KEY, JSON.stringify(valid));
+          if (!result.success && result.error) {
+            setStorageError(result.error);
+          }
+        }
+
         setEntries(valid);
 
         if (errors.length > 0) {
