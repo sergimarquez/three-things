@@ -310,8 +310,8 @@ export function useEntries() {
     }
   };
 
-  const importEntries = (importedEntries: Entry[]) => {
-    // Validate imported entries first
+  const importEntries = (importedEntries: unknown[]) => {
+    // Validate imported entries first (handles repair of malformed entries)
     const { valid: validEntries, errors } = validateEntries(importedEntries);
 
     if (errors.length > 0) {
@@ -321,14 +321,27 @@ export function useEntries() {
       }
     }
 
-    // Filter out duplicates based on date and time
-    const existingKeys = new Set(entries.map((entry) => `${entry.date}-${entry.time}`));
-    const newEntries = validEntries.filter(
-      (entry) => !existingKeys.has(`${entry.date}-${entry.time}`)
-    );
+    // Filter out duplicates based on ID (more reliable than date-time)
+    // If an entry with the same ID exists, replace it (in case it was corrupted)
+    const existingIds = new Set(entries.map((entry) => entry.id));
+    const entriesToAdd: Entry[] = [];
+    const entriesToUpdate: Entry[] = [];
 
-    // Combine with existing entries and sort by date (newest first)
-    const combinedEntries = [...entries, ...newEntries].sort(
+    validEntries.forEach((entry) => {
+      if (existingIds.has(entry.id)) {
+        // Entry exists - replace it (might have been corrupted before)
+        entriesToUpdate.push(entry);
+      } else {
+        // New entry
+        entriesToAdd.push(entry);
+      }
+    });
+
+    // Remove entries that will be updated, then add all (updated + new)
+    const entriesWithoutUpdated = entries.filter(
+      (entry) => !entriesToUpdate.some((e) => e.id === entry.id)
+    );
+    const combinedEntries = [...entriesToUpdate, ...entriesToAdd, ...entriesWithoutUpdated].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
@@ -344,7 +357,7 @@ export function useEntries() {
       setStorageError(null);
     }
 
-    return newEntries.length; // Return count of newly imported entries
+    return entriesToAdd.length + entriesToUpdate.length; // Return count of imported entries (new + updated)
   };
 
   const importMonthlyReflections = (importedReflections: MonthlyReflection[]) => {

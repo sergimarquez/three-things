@@ -234,11 +234,11 @@ export default function Archive() {
         }
 
         // Type-safe version check
-        // Note: We use Entry[] and MonthlyReflection[] here, but validation happens in import functions
-        // This is safe because importEntries/importMonthlyReflections validate the data
+        // Note: We use unknown[] for entries here, but validation happens in import functions
+        // This is safe because importEntries validates and repairs the data
         const importData = data as {
           version?: string;
-          entries: Entry[];
+          entries: unknown[]; // Will be validated and repaired in importEntries
           monthlyReflections?: MonthlyReflection[];
           yearlyReviews?: Array<unknown>; // Will be validated in importYearlyReviews
         };
