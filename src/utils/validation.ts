@@ -308,8 +308,77 @@ export function validateYearlyReview(review: unknown): { valid: boolean; error?:
 }
 
 /**
+ * Try to repair an entry by fixing common issues
+ * Returns repaired entry or null if unfixable
+ */
+function repairEntry(entry: unknown): Entry | null {
+  if (!entry || typeof entry !== "object") return null;
+
+  const e = entry as Partial<Entry>;
+  const repaired: Partial<Entry> = { ...e };
+
+  // Fix missing ID
+  if (!repaired.id || typeof repaired.id !== "string") {
+    if (repaired.date && repaired.time) {
+      repaired.id = `${repaired.date}-${repaired.time}`;
+    } else {
+      repaired.id = `entry-${Date.now()}-${Math.random()}`;
+    }
+  }
+
+  // Fix missing date - can't repair, need date
+  if (!repaired.date || typeof repaired.date !== "string") {
+    return null;
+  }
+
+  // Fix missing time - default to current time
+  if (!repaired.time || typeof repaired.time !== "string") {
+    repaired.time = new Date().toTimeString().slice(0, 5); // HH:mm format
+  }
+
+  // Fix items array
+  let items: EntryItem[] = [];
+  if (Array.isArray(repaired.items)) {
+    items = repaired.items;
+  }
+
+  // Ensure exactly 3 items - pad with empty items if needed
+  while (items.length < 3) {
+    items.push({ text: "" });
+  }
+  // Trim to 3 if more than 3
+  if (items.length > 3) {
+    items = items.slice(0, 3);
+  }
+
+  // Fix invalid items - ensure each has text
+  const fixedItems: EntryItem[] = items.map((item) => {
+    if (!item || typeof item !== "object") {
+      return { text: "" };
+    }
+    return {
+      text: typeof item.text === "string" ? item.text : "",
+      favorite: item.favorite === true,
+    };
+  });
+
+  // Final validation - check if we have minimum required data
+  if (!repaired.date || fixedItems.every((item) => !item.text.trim())) {
+    return null; // Can't repair - no meaningful data
+  }
+
+  return {
+    id: repaired.id!,
+    date: repaired.date,
+    time: repaired.time!,
+    items: fixedItems as [EntryItem, EntryItem, EntryItem],
+  };
+}
+
+/**
  * Validate and filter an array of entries
- * Returns valid entries and array of validation errors
+ * Tries to repair entries before discarding them
+ * Returns valid/repaired entries and array of validation errors
  */
 export function validateEntries(entries: unknown[]): { valid: Entry[]; errors: ValidationError[] } {
   const valid: Entry[] = [];
@@ -320,10 +389,31 @@ export function validateEntries(entries: unknown[]): { valid: Entry[]; errors: V
     if (result.valid) {
       valid.push(entry as Entry);
     } else {
-      errors.push({
-        ...result.error!,
-        message: `Entry ${index + 1}: ${result.error!.message}`,
-      });
+      // Try to repair the entry
+      const repaired = repairEntry(entry);
+      if (repaired) {
+        // Validate the repaired entry
+        const repairedResult = validateEntry(repaired);
+        if (repairedResult.valid) {
+          valid.push(repaired);
+          errors.push({
+            ...result.error!,
+            message: `Entry ${index + 1}: ${result.error!.message} (repaired automatically)`,
+          });
+        } else {
+          // Couldn't repair
+          errors.push({
+            ...result.error!,
+            message: `Entry ${index + 1}: ${result.error!.message} (could not be repaired)`,
+          });
+        }
+      } else {
+        // Couldn't repair
+        errors.push({
+          ...result.error!,
+          message: `Entry ${index + 1}: ${result.error!.message} (could not be repaired)`,
+        });
+      }
     }
   });
 

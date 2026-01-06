@@ -77,9 +77,7 @@ export default function YearReview() {
     }, {} as Record<string, typeof topMoments>);
 
     const sorted = Object.keys(grouped).sort((a, b) => {
-      return (
-        parseISO(grouped[a][0].date).getTime() - parseISO(grouped[b][0].date).getTime()
-      );
+      return parseISO(grouped[a][0].date).getTime() - parseISO(grouped[b][0].date).getTime();
     });
 
     return { momentsByMonth: grouped, sortedMonths: sorted };

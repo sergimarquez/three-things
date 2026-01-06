@@ -35,11 +35,13 @@ export default function ValidationNotice({ errors, onDismiss }: Props) {
           <AlertTriangle size={20} className="text-yellow-600 flex-shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <h3 className="font-medium text-yellow-900 mb-1">
-              Some data was invalid and has been filtered out
+              Some data had issues and was repaired or filtered
             </h3>
             <p className="text-sm text-yellow-800 mb-3">
-              We found {totalErrors} invalid {totalErrors === 1 ? "item" : "items"} ({errorSummary}
-              ). These have been skipped to prevent errors. Your valid data is safe.
+              We found {totalErrors} {totalErrors === 1 ? "item" : "items"} with issues (
+              {errorSummary}
+              ). {entryErrors > 0 && "Entries were automatically repaired when possible. "}Your
+              valid data is safe. If you're missing entries, try importing your backup again.
             </p>
             <div className="flex items-center gap-2">
               <Link
