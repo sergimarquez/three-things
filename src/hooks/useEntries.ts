@@ -321,15 +321,35 @@ export function useEntries() {
       }
     }
 
-    // Filter out duplicates based on ID (more reliable than date-time)
-    // If an entry with the same ID exists, replace it (in case it was corrupted)
+    // Check both current state AND localStorage for existing entries
+    // This is important because corrupted entries might be filtered out of state
+    // but still exist in localStorage
     const existingIds = new Set(entries.map((entry) => entry.id));
+
+    // Also check localStorage directly for entries that might have been filtered out
+    const stored = safeGetItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((entry: unknown) => {
+            const e = entry as Partial<Entry>;
+            if (e.id && typeof e.id === "string") {
+              existingIds.add(e.id);
+            }
+          });
+        }
+      } catch (error) {
+        // Ignore parse errors, we'll just use state
+      }
+    }
+
     const entriesToAdd: Entry[] = [];
     const entriesToUpdate: Entry[] = [];
 
     validEntries.forEach((entry) => {
       if (existingIds.has(entry.id)) {
-        // Entry exists - replace it (might have been corrupted before)
+        // Entry exists - always replace it (might have been corrupted before)
         entriesToUpdate.push(entry);
       } else {
         // New entry
