@@ -41,13 +41,14 @@ export default function MonthlyReviewCard({ reflection }: Props) {
           const entry = entries.find((e) => e.id === entryId);
           if (entry && entry.items[itemIndex] !== undefined) {
             return {
+              key, // Keep the original key for use as React key
               text: entry.items[itemIndex].text,
               date: entry.date,
             };
           }
           return null;
         })
-        .filter(Boolean) as Array<{ text: string; date: string }>,
+        .filter(Boolean) as Array<{ key: string; text: string; date: string }>,
     [entries, reflection.selectedFavorites]
   );
 
@@ -89,9 +90,9 @@ export default function MonthlyReviewCard({ reflection }: Props) {
         <div className="mb-4">
           <h4 className="text-sm font-medium text-stone-700 mb-3">Selected Favorites</h4>
           <div className="space-y-2">
-            {favoriteItems.map((item, index) => (
+            {favoriteItems.map((item) => (
               <div
-                key={index}
+                key={item.key}
                 className="flex items-start gap-2 p-3 bg-white rounded-lg border border-blue-100"
               >
                 <Star
