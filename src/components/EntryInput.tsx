@@ -9,7 +9,6 @@ import {
   BookOpen,
   TrendingUp,
   ArrowRight,
-  Check,
   Calendar,
   X,
   Sparkles,
@@ -47,7 +46,6 @@ export default function EntryInput() {
   } = useEntries();
   const [items, setItems] = useState<EntryItem[]>([{ text: "" }, { text: "" }, { text: "" }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [showMonthlyReviewPrompt, setShowMonthlyReviewPrompt] = useState(false);
   const [dismissedPromptMonth, setDismissedPromptMonth] = useState<string | null>(() => {
     return safeGetItem("three-things-dismissed-month");
@@ -197,16 +195,10 @@ export default function EntryInput() {
       // Dispatch custom event to notify Layout of the change
       window.dispatchEvent(new CustomEvent("entryAdded"));
 
-      // Show success animation
-      setTimeout(() => {
-        setShowSuccessAnimation(true);
-      }, 300);
-
-      // Reset form after animation completes
-      setTimeout(() => {
-        setItems([{ text: "" }, { text: "" }, { text: "" }]);
-        setIsSubmitting(false);
-      }, 2000);
+      // Reset form
+      setItems([{ text: "" }, { text: "" }, { text: "" }]);
+      setIsSubmitting(false);
+      // The hasTodayEntry() check below will automatically show the success screen
     } catch {
       // Error is already set in storageError state by saveEntry
       setIsSubmitting(false);
@@ -218,14 +210,13 @@ export default function EntryInput() {
   const filledCount = items.filter((item) => item.text.trim().length > 0).length;
   const isFormValid = filledCount === 3;
 
-  // Success Animation Component
-  if (showSuccessAnimation && !hasTodayEntry()) {
+  if (hasTodayEntry()) {
     return (
-      <>
+      <div className="max-w-2xl mx-auto min-h-[calc(100vh-200px)] flex flex-col justify-center">
         <LocalStorageNotice entriesCount={entries.length} />
         {/* Storage Error Banner */}
         {storageError && (
-          <div className="max-w-2xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
             <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <h3 className="font-medium text-red-900 mb-1">Unable to Save</h3>
@@ -247,37 +238,6 @@ export default function EntryInput() {
             </div>
           </div>
         )}
-        <div className="max-w-2xl mx-auto min-h-[calc(100vh-200px)] flex items-center justify-center">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              {/* Animated Checkmark */}
-              <div className="relative mb-8">
-                <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto animate-[bounce_0.6s_ease-in-out] shadow-lg">
-                  <Check
-                    size={48}
-                    className="text-white animate-[fadeIn_0.8s_ease-in-out_0.3s_both]"
-                  />
-                </div>
-                {/* Ripple effect */}
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-24 h-24 bg-green-200 rounded-full animate-[ping_1s_cubic-bezier(0,0,0.2,1)_0.2s]"></div>
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-24 h-24 bg-green-100 rounded-full animate-[ping_1s_cubic-bezier(0,0,0.2,1)_0.5s]"></div>
-              </div>
-
-              {/* Success Message */}
-              <div className="animate-[fadeInUp_0.8s_ease-out_0.5s_both]">
-                <h2 className="text-2xl font-medium text-stone-900 mb-3">Gratitude Saved! ✨</h2>
-                <p className="text-stone-600 text-lg">Your three good things have been recorded</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  if (hasTodayEntry()) {
-    return (
-      <div className="max-w-2xl mx-auto min-h-[calc(100vh-200px)] flex flex-col justify-center">
         {/* Yearly Review - Special once-a-year reminder */}
         {showYearlyReviewBanner && (
           <div className="mb-8 text-center">

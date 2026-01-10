@@ -335,3 +335,4 @@ After adding memoization to:
 ---
 
 _This guide was created while optimizing the 3Good app. Use it as a reference for future React projects!_
+
