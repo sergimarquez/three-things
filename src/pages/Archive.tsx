@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO, isAfter, isBefore, startOfDay, endOfDay, endOfMonth } from "date-fns";
 import { useEntries, DATA_VERSION } from "../hooks/useEntries";
@@ -66,8 +66,7 @@ export default function Archive() {
     return `${format(date, "EEEE, MMMM d, yyyy")} at ${timeStr}`;
   };
 
-  // Filtered entries
-  const filteredEntries = useMemo(() => {
+  const filteredEntries = (() => {
     let result = entries.filter((entry) => {
       // Search filter (using debounced search term)
       if (debouncedSearchTerm) {
@@ -109,10 +108,9 @@ export default function Archive() {
     }
 
     return result;
-  }, [entries, debouncedSearchTerm, showStarredOnly, dateFrom, dateTo]);
+  })();
 
-  // Get months needing review (memoized)
-  const monthsNeedingReview = useMemo(() => {
+  const monthsNeedingReview = (() => {
     const today = new Date();
     const currentMonth = format(today, "yyyy-MM");
 
@@ -135,10 +133,9 @@ export default function Archive() {
 
     // Sort newest first
     return monthsNeeding.sort((a, b) => b.localeCompare(a));
-  }, [monthlyReflections, entries]);
+  })();
 
-  // Merge entries and monthly reviews chronologically
-  const mergedItems = useMemo(() => {
+  const mergedItems = (() => {
     type MergedItem =
       | {
           type: "entry";
@@ -197,7 +194,7 @@ export default function Archive() {
       // Otherwise sort by date (newest first)
       return dateB - dateA;
     });
-  }, [filteredEntries, monthlyReflections, showMonthlyReviews]);
+  })();
 
   const clearFilters = () => {
     setSearchTerm("");

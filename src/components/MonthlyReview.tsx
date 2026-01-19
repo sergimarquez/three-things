@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import { useEntries } from "../hooks/useEntries";
 import type { EntryItem, Entry } from "../hooks/useEntries";
@@ -30,19 +30,13 @@ export default function MonthlyReview({ month, onClose, onSave }: Props) {
   const [reflectionText, setReflectionText] = useState(existingReflection?.reflectionText || "");
   const [viewMode, setViewMode] = useState<"all" | "starred">("all");
 
-  // Memoize longest streak calculation - only recalculate when monthEntries change
-  const longestStreak = useMemo(() => calculateLongestStreak(monthEntries), [monthEntries]);
-
-  // Calculate stats (memoized values)
-  const stats = useMemo(
-    () => ({
-      daysPracticed: monthEntries.length,
-      totalItems: monthEntries.length * 3,
-      starredCount: starredItems.length,
-      longestStreak,
-    }),
-    [monthEntries.length, starredItems.length, longestStreak]
-  );
+  const longestStreak = calculateLongestStreak(monthEntries);
+  const stats = {
+    daysPracticed: monthEntries.length,
+    totalItems: monthEntries.length * 3,
+    starredCount: starredItems.length,
+    longestStreak,
+  };
 
   function calculateLongestStreak(entries: Entry[]) {
     if (entries.length === 0) return 0;

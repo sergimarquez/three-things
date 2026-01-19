@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
 import { format, parseISO } from "date-fns";
 import { useEntries } from "../hooks/useEntries";
@@ -21,17 +21,12 @@ export default function YearReview() {
   const isJanuary = today.getMonth() === 0;
   const dayOfMonth = today.getDate();
 
-  // Memoize years with entries - only recalculate when allYearsWithEntries, currentYear, or monthlyReflections change
-  const yearsWithEntries = useMemo(
-    () =>
-      allYearsWithEntries
-        .filter((year) => Number(year) < currentYear)
-        .filter((year) => {
-          // Check if this year has at least one monthly reflection
-          return monthlyReflections.some((reflection) => reflection.month.startsWith(year));
-        }),
-    [allYearsWithEntries, currentYear, monthlyReflections]
-  );
+  const yearsWithEntries = allYearsWithEntries
+    .filter((year) => Number(year) < currentYear)
+    .filter((year) => {
+      // Check if this year has at least one monthly reflection
+      return monthlyReflections.some((reflection) => reflection.month.startsWith(year));
+    });
 
   // If we're in the first week of January, default to previous year for yearly review
   const previousYear = String(currentYear - 1);
@@ -65,8 +60,7 @@ export default function YearReview() {
     reflection.month.startsWith(selectedYear)
   );
 
-  // Memoize grouping and sorting - only recalculate when topMoments change
-  const { momentsByMonth, sortedMonths } = useMemo(() => {
+  const { momentsByMonth, sortedMonths } = (() => {
     const grouped = topMoments.reduce((acc, moment) => {
       const monthKey = format(parseISO(moment.date), "MMMM yyyy");
       if (!acc[monthKey]) {
@@ -81,7 +75,7 @@ export default function YearReview() {
     });
 
     return { momentsByMonth: grouped, sortedMonths: sorted };
-  }, [topMoments]);
+  })();
 
   const handleSave = () => {
     saveYearlyReview({

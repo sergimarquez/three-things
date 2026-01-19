@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   format,
   parseISO,
@@ -20,16 +20,10 @@ export default function Progress() {
   const { entries, getYearsWithEntries } = useEntries();
   const allYearsWithEntries = getYearsWithEntries();
   const currentYear = new Date().getFullYear();
-  // Only show button if there's at least one completed year (not the current year)
-  // Memoize: only recalculate when allYearsWithEntries or currentYear changes
-  const completedYears = useMemo(
-    () => allYearsWithEntries.filter((year) => Number(year) < currentYear),
-    [allYearsWithEntries, currentYear]
-  );
+  const completedYears = allYearsWithEntries.filter((year) => Number(year) < currentYear);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
-  // Memoize streak calculation - only recalculate when entries change
-  const streak = useMemo(() => {
+  const streak = (() => {
     if (entries.length === 0) return 0;
 
     const sortedEntries = [...entries].sort(
@@ -50,10 +44,9 @@ export default function Progress() {
     }
 
     return streak;
-  }, [entries]);
+  })();
 
-  // Memoize longest streak calculation - only recalculate when entries change
-  const longestStreak = useMemo(() => {
+  const longestStreak = (() => {
     if (entries.length === 0) return 0;
 
     const sortedEntries = [...entries].sort(
@@ -76,10 +69,9 @@ export default function Progress() {
     }
 
     return maxStreak;
-  }, [entries]);
+  })();
 
-  // Memoize weekly activity - only recalculate when entries change
-  const weeklyActivity = useMemo(() => {
+  const weeklyActivity = (() => {
     const weekStart = startOfWeek(new Date());
     const weekEnd = endOfWeek(new Date());
     const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
@@ -93,10 +85,9 @@ export default function Progress() {
         isToday: isToday(day),
       };
     });
-  }, [entries]);
+  })();
 
-  // Memoize monthly progress - only recalculate when entries change
-  const monthlyProgress = useMemo(() => {
+  const monthlyProgress = (() => {
     const monthStart = startOfMonth(new Date());
     const monthEnd = endOfMonth(new Date());
     const daysInMonth = differenceInCalendarDays(monthEnd, monthStart) + 1;
@@ -114,7 +105,7 @@ export default function Progress() {
       daysInMonth,
       percentage: Math.round((monthlyEntries.length / daysSoFar) * 100),
     };
-  }, [entries]);
+  })();
 
   if (entries.length === 0) {
     return (

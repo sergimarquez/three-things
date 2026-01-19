@@ -32,6 +32,7 @@ A thoughtful daily gratitude practice app. Simple, focused, and privacy-first.
 ## Tech Stack
 
 - **React 19.1** + **TypeScript 5.8** + **Vite 6.3** - Modern React with strict type safety
+- **React Compiler** - Automatic memoization and performance optimization
 - **Tailwind CSS 3.4** - Utility-first styling
 - **date-fns 4.1** - Immutable date utilities
 - **Lucide React** - Icon library
@@ -63,7 +64,8 @@ src/
 - **localStorage over IndexedDB** - Simpler API for small-scale personal data
 - **TypeScript Strict Mode** - Full type safety with `noUnusedLocals` and `noImplicitAny`
 - **SPA Routing** - Netlify redirects configured for client-side routing with dedicated pages for reviews
-- **Performance** - Memoization with `useMemo` for expensive calculations, debounced search input
+- **React Compiler** - Automatic memoization of components and expensive calculations, eliminating manual `useMemo`/`useCallback` overhead
+- **Performance** - Debounced search input, automatic compiler optimizations
 
 ### Robustness & Error Handling
 
@@ -107,7 +109,7 @@ The app is configured for Netlify with:
 - **TypeScript Strict Mode** - Compile-time type checking
 - **Component-Based Architecture** - Reusable, composable components
 - **Custom Hooks Pattern** - Encapsulated business logic
-- **Performance Optimization** - Memoization for expensive operations
+- **React Compiler** - Automatic performance optimization at build time
 
 ## Versioning
 
