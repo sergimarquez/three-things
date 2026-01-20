@@ -62,7 +62,7 @@ export function safeSetItem(
 export function safeGetItem(key: string): string | null {
   try {
     return localStorage.getItem(key);
-  } catch (error) {
+  } catch {
     // If we can't read, return null (treat as if item doesn't exist)
     return null;
   }
@@ -75,7 +75,7 @@ export function safeRemoveItem(key: string): boolean {
   try {
     localStorage.removeItem(key);
     return true;
-  } catch (error) {
+  } catch {
     // If we can't remove, that's okay - not critical
     return false;
   }

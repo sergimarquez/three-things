@@ -1,5 +1,7 @@
 # 3Good
 
+[![CI](https://github.com/sergimarquez/three-things/actions/workflows/ci.yml/badge.svg)](https://github.com/sergimarquez/three-things/actions/workflows/ci.yml)
+
 A thoughtful daily gratitude practice app. Simple, focused, and privacy-first.
 
 ## What is 3Good?
@@ -55,6 +57,9 @@ src/
 ├── hooks/          # Custom React hooks (state management)
 ├── layout/         # Layout components
 ├── pages/          # Route-level page components
+├── types/          # Centralized TypeScript types
+├── utils/          # Pure utility functions (testable)
+├── test/           # Test setup and utilities
 └── assets/         # Static assets
 ```
 
@@ -110,6 +115,25 @@ The app is configured for Netlify with:
 - **Component-Based Architecture** - Reusable, composable components
 - **Custom Hooks Pattern** - Encapsulated business logic
 - **React Compiler** - Automatic performance optimization at build time
+- **Vitest** - Fast unit testing with jsdom environment
+- **GitHub Actions CI** - Automated testing, linting, and builds on every push/PR
+
+## Testing
+
+```bash
+# Run tests in watch mode
+npm test
+
+# Run tests once (CI mode)
+npm run test:run
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+Tests are located alongside source files (`*.test.ts`) and cover:
+- Pure utility functions (streak calculations, date filtering, etc.)
+- Data validation logic
 
 ## Versioning
 
