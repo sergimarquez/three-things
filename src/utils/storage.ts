@@ -2,10 +2,10 @@
  * Safe localStorage utilities with error handling
  */
 
-export type StorageError = {
-  type: "quota_exceeded" | "disabled" | "unknown";
-  message: string;
-};
+import type { StorageError } from "../types";
+
+// Re-export for backward compatibility
+export type { StorageError };
 
 /**
  * Safely set an item in localStorage with error handling

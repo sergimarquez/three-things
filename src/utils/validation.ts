@@ -1,16 +1,13 @@
-import type { Entry, EntryItem, MonthlyReflection, YearlyReview } from "../hooks/useEntries";
 import { parseISO, isValid } from "date-fns";
+import type { Entry, EntryItem, MonthlyReflection, YearlyReview, ValidationError } from "../types";
+
+// Re-export ValidationError for backward compatibility
+export type { ValidationError };
 
 /**
  * Validation utilities for data integrity
  * Validates data structure when loading from localStorage to prevent crashes
  */
-
-export type ValidationError = {
-  type: "invalid_entry" | "invalid_reflection" | "invalid_review";
-  message: string;
-  data?: unknown;
-};
 
 /**
  * Validate an EntryItem
