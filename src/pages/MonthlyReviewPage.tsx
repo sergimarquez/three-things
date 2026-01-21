@@ -9,6 +9,31 @@ export default function MonthlyReviewPage() {
   const { month } = useParams<{ month: string }>();
   const navigate = useNavigate();
 
+  // All hooks must be called before any conditional returns (Rules of Hooks)
+  const {
+    getEntriesForMonth,
+    getStarredItemsForMonth,
+    getMonthlyReflection,
+    saveMonthlyReflection,
+    updateEntry,
+  } = useEntries();
+
+  // Get data (safe to call even if month is undefined - will return empty)
+  const monthEntries = month ? getEntriesForMonth(month) : [];
+  const starredItems = month ? getStarredItemsForMonth(month) : [];
+  const existingReflection = month ? getMonthlyReflection(month) : undefined;
+
+  // All useState hooks must be called unconditionally
+  const [selectedFavorites, setSelectedFavorites] = useState<string[]>(
+    existingReflection?.selectedFavorites || []
+  );
+  const [reflectionText, setReflectionText] = useState(existingReflection?.reflectionText || "");
+  const [viewMode, setViewMode] = useState<"review" | "select">("select");
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+
+  // Now safe to do conditional return after all hooks
   if (!month) {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
@@ -19,28 +44,6 @@ export default function MonthlyReviewPage() {
       </div>
     );
   }
-
-  const {
-    entries,
-    getEntriesForMonth,
-    getStarredItemsForMonth,
-    getMonthlyReflection,
-    saveMonthlyReflection,
-    updateEntry,
-  } = useEntries();
-
-  const monthEntries = getEntriesForMonth(month);
-  const starredItems = getStarredItemsForMonth(month);
-  const existingReflection = getMonthlyReflection(month);
-
-  const [selectedFavorites, setSelectedFavorites] = useState<string[]>(
-    existingReflection?.selectedFavorites || []
-  );
-  const [reflectionText, setReflectionText] = useState(existingReflection?.reflectionText || "");
-  const [viewMode, setViewMode] = useState<"review" | "select">("select");
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
 
   // Calculate stats
   const stats = {
@@ -79,7 +82,7 @@ export default function MonthlyReviewPage() {
   }
 
   const toggleItemStar = (entryId: string, itemIndex: number) => {
-    const entry = entries.find((e) => e.id === entryId);
+    const entry = monthEntries.find((e) => e.id === entryId);
     if (!entry) return;
 
     const updatedItems = [...entry.items];

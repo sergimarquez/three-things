@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { safeGetItem, safeSetItem } from "../utils/storage";
 
 const NOTICE_INTERVAL_DAYS = 30;
 
 function shouldShowNotice(entriesCount: number) {
   if (entriesCount < 5) return false;
-  const lastDismissed = localStorage.getItem("localStorageNoticeLastDismissed");
+  const lastDismissed = safeGetItem("localStorageNoticeLastDismissed");
   if (!lastDismissed) return true;
   const daysSince = (Date.now() - Number(lastDismissed)) / (1000 * 60 * 60 * 24);
   return daysSince >= NOTICE_INTERVAL_DAYS;
@@ -22,7 +23,7 @@ export default function LocalStorageNotice({ entriesCount }: { entriesCount: num
 
   const handleDismiss = () => {
     setVisible(false);
-    localStorage.setItem("localStorageNoticeLastDismissed", String(Date.now()));
+    safeSetItem("localStorageNoticeLastDismissed", String(Date.now()));
   };
 
   if (!visible) return null;

@@ -413,7 +413,7 @@ export default function EntryInput() {
                   const year = String(new Date().getFullYear() - 1);
                   setShowYearlyReviewBanner(false);
                   setDismissedYearBanner(year);
-                  localStorage.setItem("three-things-dismissed-year", year);
+                  safeSetItem("three-things-dismissed-year", year);
                 }}
                 className="px-4 py-2 text-stone-500 hover:text-stone-700 text-sm transition-colors"
               >
@@ -452,7 +452,7 @@ export default function EntryInput() {
                 const month = getPreviousMonth();
                 setShowMonthlyReviewPrompt(false);
                 setDismissedPromptMonth(month);
-                localStorage.setItem("three-things-dismissed-month", month);
+                safeSetItem("three-things-dismissed-month", month);
               }}
               className="p-2 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-blue-100"
             >

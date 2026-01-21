@@ -1,8 +1,3 @@
-/**
- * Pure utility functions for entry-related computations
- * These functions are stateless and easily testable
- */
-
 import { format, subDays, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import type { Entry, EntryItem, MonthlyReflection } from "../types";
 
