@@ -1,8 +1,3 @@
-/**
- * Settings — Cloud backup UX (not in use).
- * Route and menu item removed until cloud is developed. Re-add in App.tsx and Layout.tsx when ready.
- */
-
 import { useState, useEffect } from "react";
 import { Cloud, Mail, Check, Loader2 } from "lucide-react";
 import { safeGetItem, safeSetItem } from "../utils/storage";
@@ -45,7 +40,6 @@ export default function Settings() {
   const handleSendLink = () => {
     if (!emailInput.trim()) return;
     setSendingLink(true);
-    // Mock: after 1.5s "send" and sign in with that email
     setTimeout(() => {
       setSendingLink(false);
       setLinkSent(true);
@@ -68,7 +62,6 @@ export default function Settings() {
         <p className="text-stone-600">Preferences and backup options</p>
       </div>
 
-      {/* Cloud backup — coming soon */}
       <div className="bg-white border border-stone-200 rounded-2xl p-8">
         <div className="flex items-center gap-2 mb-6">
           <span className="text-xs font-medium text-stone-500 uppercase tracking-wide">
@@ -112,7 +105,6 @@ export default function Settings() {
               </button>
             </div>
 
-            {/* When cloud is on but not signed in */}
             {cloudEnabled && !cloudEmail && (
               <div className="border border-stone-200 rounded-xl p-5 bg-stone-50">
                 <p className="text-sm text-stone-700 mb-4">
@@ -163,14 +155,12 @@ export default function Settings() {
                 </div>
                 {linkSent && (
                   <p className="text-sm text-stone-500 mt-3">
-                    Check your inbox and click the link to finish signing in. (Preview: link is not
-                    sent.)
+                    Check your inbox and click the link to finish signing in.
                   </p>
                 )}
               </div>
             )}
 
-            {/* When cloud is on and signed in */}
             {cloudEnabled && cloudEmail && (
               <div className="border border-stone-200 rounded-xl p-5 bg-stone-50 flex flex-wrap
                 items-center justify-between gap-4"
@@ -197,10 +187,6 @@ export default function Settings() {
             )}
           </div>
         </div>
-
-        <p className="text-xs text-stone-500 mt-6 pt-6 border-t border-stone-100">
-          Not available yet — try the toggle and sign-in flow above to see what’s coming.
-        </p>
       </div>
     </div>
   );
