@@ -1,6 +1,6 @@
 /**
- * Settings — UX preview for Cloud backup (no backend wired yet).
- * State is stored in localStorage so you can click through and refresh to check the flow.
+ * Settings — Cloud backup UX (not in use).
+ * Route and menu item removed until cloud is developed. Re-add in App.tsx and Layout.tsx when ready.
  */
 
 import { useState, useEffect } from "react";
@@ -68,8 +68,13 @@ export default function Settings() {
         <p className="text-stone-600">Preferences and backup options</p>
       </div>
 
-      {/* Cloud backup — UX preview */}
+      {/* Cloud backup — coming soon */}
       <div className="bg-white border border-stone-200 rounded-2xl p-8">
+        <div className="flex items-center gap-2 mb-6">
+          <span className="text-xs font-medium text-stone-500 uppercase tracking-wide">
+            Coming soon
+          </span>
+        </div>
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center flex-shrink-0">
             <Cloud size={24} className="text-stone-600" />
@@ -194,7 +199,7 @@ export default function Settings() {
         </div>
 
         <p className="text-xs text-stone-500 mt-6 pt-6 border-t border-stone-100">
-          This is a UX preview. Cloud backup is not connected to a server yet.
+          Not available yet — try the toggle and sign-in flow above to see what’s coming.
         </p>
       </div>
     </div>

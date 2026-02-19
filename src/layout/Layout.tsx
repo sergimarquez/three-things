@@ -1,17 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { Circle, BookOpen, Settings, Cloud, TrendingUp, Download, Info } from "lucide-react";
+import { Circle, BookOpen, Settings, TrendingUp, Download, Info } from "lucide-react";
 import { DATA_VERSION, useEntries } from "../hooks/useEntries";
-import { safeGetItem } from "../utils/storage";
 import ValidationNotice from "../components/ValidationNotice";
-
-const CLOUD_ENABLED_KEY = "three-things-cloud-backup-enabled";
 
 export default function Layout() {
   const location = useLocation();
   const [forceUpdate, setForceUpdate] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [cloudEnabled, setCloudEnabled] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { validationErrors, clearValidationErrors } = useEntries();
 
@@ -20,28 +16,11 @@ export default function Layout() {
     { name: "Journal", path: "/archive", icon: BookOpen },
   ];
 
-  const menuItems: Array<{
-    name: string;
-    path: string;
-    icon: typeof Cloud;
-    showCloudStatus?: boolean;
-  }> = [
-    { name: "Backup", path: "/settings", icon: Cloud, showCloudStatus: true },
+  const menuItems = [
     { name: "Progress", path: "/streak", icon: TrendingUp },
     { name: "Export", path: "/export", icon: Download },
     { name: "About", path: "/instructions", icon: Info },
   ];
-
-  useEffect(() => {
-    setCloudEnabled(safeGetItem(CLOUD_ENABLED_KEY) === "true");
-    const handleCloudChange = () => setCloudEnabled(safeGetItem(CLOUD_ENABLED_KEY) === "true");
-    window.addEventListener("storage", handleCloudChange);
-    window.addEventListener("cloudBackupChanged", handleCloudChange);
-    return () => {
-      window.removeEventListener("storage", handleCloudChange);
-      window.removeEventListener("cloudBackupChanged", handleCloudChange);
-    };
-  }, [location.pathname]);
 
   useEffect(() => {
     const handleEntryAdded = () => setForceUpdate((prev) => prev + 1);
@@ -99,11 +78,7 @@ export default function Layout() {
                   aria-expanded={menuOpen}
                   aria-haspopup="true"
                   aria-label="Settings and more"
-                  className={`
-                    flex items-center justify-center p-2 rounded-lg text-sm font-medium
-                    transition-all duration-200 hover:bg-stone-100
-                    ${location.pathname === "/settings" ? "text-stone-900 bg-stone-100" : "text-stone-600 hover:text-stone-900"}
-                  `}
+                  className="flex items-center justify-center p-2 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-all"
                 >
                   <Settings size={18} />
                 </button>
@@ -115,7 +90,6 @@ export default function Layout() {
                     {menuItems.map((item) => {
                       const Icon = item.icon;
                       const isActive = location.pathname === item.path;
-                      const showStatus = item.showCloudStatus && cloudEnabled;
                       return (
                         <Link
                           key={item.path}
@@ -123,17 +97,12 @@ export default function Layout() {
                           role="menuitem"
                           onClick={() => setMenuOpen(false)}
                           className={`
-                            flex items-center justify-between gap-2 px-3 py-2 text-sm font-medium
+                            flex items-center gap-2.5 px-3 py-2 text-sm font-medium
                             ${isActive ? "text-stone-900 bg-stone-50" : "text-stone-700 hover:bg-stone-50"}
                           `}
                         >
-                          <span className="flex items-center gap-2.5">
-                            <Icon size={16} className="text-stone-500" />
-                            {item.name}
-                          </span>
-                          {showStatus && (
-                            <span className="text-xs text-sky-600 font-normal">On</span>
-                          )}
+                          <Icon size={16} className="text-stone-500" />
+                          {item.name}
                         </Link>
                       );
                     })}
