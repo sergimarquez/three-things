@@ -1,31 +1,64 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { Circle, BookOpen, TrendingUp, Download, Info } from "lucide-react";
+import { Circle, BookOpen, Settings, Cloud, TrendingUp, Download, Info } from "lucide-react";
 import { DATA_VERSION, useEntries } from "../hooks/useEntries";
+import { safeGetItem } from "../utils/storage";
 import ValidationNotice from "../components/ValidationNotice";
+
+const CLOUD_ENABLED_KEY = "three-things-cloud-backup-enabled";
 
 export default function Layout() {
   const location = useLocation();
   const [forceUpdate, setForceUpdate] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [cloudEnabled, setCloudEnabled] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const { validationErrors, clearValidationErrors } = useEntries();
 
-  // Listen for entry additions to force re-render
-  useEffect(() => {
-    const handleEntryAdded = () => {
-      setForceUpdate((prev) => prev + 1);
-    };
-
-    window.addEventListener("entryAdded", handleEntryAdded);
-    return () => window.removeEventListener("entryAdded", handleEntryAdded);
-  }, [forceUpdate]);
-
-  const navItems = [
+  const mainNavItems = [
     { name: "Reflect", path: "/", icon: Circle },
     { name: "Journal", path: "/archive", icon: BookOpen },
+  ];
+
+  const menuItems: Array<{
+    name: string;
+    path: string;
+    icon: typeof Cloud;
+    showCloudStatus?: boolean;
+  }> = [
+    { name: "Backup", path: "/settings", icon: Cloud, showCloudStatus: true },
     { name: "Progress", path: "/streak", icon: TrendingUp },
     { name: "Export", path: "/export", icon: Download },
     { name: "About", path: "/instructions", icon: Info },
   ];
+
+  useEffect(() => {
+    setCloudEnabled(safeGetItem(CLOUD_ENABLED_KEY) === "true");
+    const handleCloudChange = () => setCloudEnabled(safeGetItem(CLOUD_ENABLED_KEY) === "true");
+    window.addEventListener("storage", handleCloudChange);
+    window.addEventListener("cloudBackupChanged", handleCloudChange);
+    return () => {
+      window.removeEventListener("storage", handleCloudChange);
+      window.removeEventListener("cloudBackupChanged", handleCloudChange);
+    };
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const handleEntryAdded = () => setForceUpdate((prev) => prev + 1);
+    window.addEventListener("entryAdded", handleEntryAdded);
+    return () => window.removeEventListener("entryAdded", handleEntryAdded);
+  }, [forceUpdate]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [menuOpen]);
 
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col">
@@ -39,23 +72,18 @@ export default function Layout() {
               </h1>
             </Link>
 
-            <nav className="flex items-center space-x-1">
-              {navItems.map((item) => {
+            <nav className="flex items-center gap-1">
+              {mainNavItems.map((item) => {
                 const isActive = location.pathname === item.path;
                 const Icon = item.icon;
-
                 return (
                   <Link
                     key={item.path}
                     to={item.path}
                     className={`
-                      relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
+                      flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
                       transition-all duration-200 hover:bg-stone-100
-                      ${
-                        isActive
-                          ? "text-stone-900 bg-stone-100"
-                          : "text-stone-600 hover:text-stone-900"
-                      }
+                      ${isActive ? "text-stone-900 bg-stone-100" : "text-stone-600 hover:text-stone-900"}
                     `}
                   >
                     <Icon size={16} />
@@ -63,6 +91,55 @@ export default function Layout() {
                   </Link>
                 );
               })}
+
+              <div className="relative" ref={menuRef}>
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen((open) => !open)}
+                  aria-expanded={menuOpen}
+                  aria-haspopup="true"
+                  aria-label="Settings and more"
+                  className={`
+                    flex items-center justify-center p-2 rounded-lg text-sm font-medium
+                    transition-all duration-200 hover:bg-stone-100
+                    ${location.pathname === "/settings" ? "text-stone-900 bg-stone-100" : "text-stone-600 hover:text-stone-900"}
+                  `}
+                >
+                  <Settings size={18} />
+                </button>
+                {menuOpen && (
+                  <div
+                    className="absolute right-0 top-full mt-1 py-1.5 w-44 bg-white border border-stone-200 rounded-xl shadow-lg z-50"
+                    role="menu"
+                  >
+                    {menuItems.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = location.pathname === item.path;
+                      const showStatus = item.showCloudStatus && cloudEnabled;
+                      return (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          role="menuitem"
+                          onClick={() => setMenuOpen(false)}
+                          className={`
+                            flex items-center justify-between gap-2 px-3 py-2 text-sm font-medium
+                            ${isActive ? "text-stone-900 bg-stone-50" : "text-stone-700 hover:bg-stone-50"}
+                          `}
+                        >
+                          <span className="flex items-center gap-2.5">
+                            <Icon size={16} className="text-stone-500" />
+                            {item.name}
+                          </span>
+                          {showStatus && (
+                            <span className="text-xs text-sky-600 font-normal">On</span>
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </nav>
           </div>
         </div>

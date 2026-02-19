@@ -7,6 +7,7 @@ import Export from "./pages/Export";
 import Instructions from "./pages/Instructions";
 import YearReview from "./pages/YearReview";
 import MonthlyReviewPage from "./pages/MonthlyReviewPage";
+import Settings from "./pages/Settings";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 function App() {
@@ -44,6 +45,14 @@ function App() {
               element={
                 <ErrorBoundary>
                   <Export />
+                </ErrorBoundary>
+              }
+            />
+            <Route
+              path="settings"
+              element={
+                <ErrorBoundary>
+                  <Settings />
                 </ErrorBoundary>
               }
             />

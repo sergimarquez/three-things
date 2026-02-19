@@ -3,9 +3,15 @@ import { Link } from "react-router-dom";
 import { safeGetItem, safeSetItem } from "../utils/storage";
 
 const NOTICE_INTERVAL_DAYS = 30;
+const CLOUD_ENABLED_KEY = "three-things-cloud-backup-enabled";
+
+function isCloudBackupEnabled(): boolean {
+  return safeGetItem(CLOUD_ENABLED_KEY) === "true";
+}
 
 function shouldShowNotice(entriesCount: number) {
   if (entriesCount < 5) return false;
+  if (isCloudBackupEnabled()) return false; // UX preview: don't show warning when "cloud" is on
   const lastDismissed = safeGetItem("localStorageNoticeLastDismissed");
   if (!lastDismissed) return true;
   const daysSince = (Date.now() - Number(lastDismissed)) / (1000 * 60 * 60 * 24);
