@@ -4,11 +4,14 @@ import { Circle, BookOpen, Settings, TrendingUp, Download, Info } from "lucide-r
 import { DATA_VERSION, useEntries } from "../hooks/useEntries";
 import ValidationNotice from "../components/ValidationNotice";
 
+const MENU_HOVER_LEAVE_DELAY_MS = 150;
+
 export default function Layout() {
   const location = useLocation();
   const [forceUpdate, setForceUpdate] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuLeaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { validationErrors, clearValidationErrors } = useEntries();
 
   const mainNavItems = [
@@ -29,6 +32,12 @@ export default function Layout() {
   }, [forceUpdate]);
 
   useEffect(() => {
+    return () => {
+      if (menuLeaveTimeoutRef.current) clearTimeout(menuLeaveTimeoutRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!menuOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -38,6 +47,18 @@ export default function Layout() {
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
   }, [menuOpen]);
+
+  const handleMenuEnter = () => {
+    if (menuLeaveTimeoutRef.current) {
+      clearTimeout(menuLeaveTimeoutRef.current);
+      menuLeaveTimeoutRef.current = null;
+    }
+    setMenuOpen(true);
+  };
+
+  const handleMenuLeave = () => {
+    menuLeaveTimeoutRef.current = setTimeout(() => setMenuOpen(false), MENU_HOVER_LEAVE_DELAY_MS);
+  };
 
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col">
@@ -71,7 +92,12 @@ export default function Layout() {
                 );
               })}
 
-              <div className="relative" ref={menuRef}>
+              <div
+                className="relative"
+                ref={menuRef}
+                onMouseEnter={handleMenuEnter}
+                onMouseLeave={handleMenuLeave}
+              >
                 <button
                   type="button"
                   onClick={() => setMenuOpen((open) => !open)}
