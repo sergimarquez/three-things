@@ -20,7 +20,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { format, subDays } from "date-fns";
-import { defaultStorageAdapter, type StorageAdapter } from "../utils/storage";
+import { useStorage } from "./StorageContext";
 import {
   validateEntries,
   validateMonthlyReflections,
@@ -120,12 +120,8 @@ const EntriesContext = createContext<EntriesContextType | null>(null);
 // Provider Component
 // ============================================================================
 
-type EntriesProviderProps = {
-  children: ReactNode;
-  storageAdapter?: StorageAdapter;
-};
-
-export function EntriesProvider({ children, storageAdapter = defaultStorageAdapter }: EntriesProviderProps) {
+export function EntriesProvider({ children }: { children: ReactNode }) {
+  const storageAdapter = useStorage();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [monthlyReflections, setMonthlyReflections] = useState<MonthlyReflection[]>([]);
   const [yearlyReviews, setYearlyReviews] = useState<YearlyReview[]>([]);
