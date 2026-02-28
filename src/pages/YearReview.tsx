@@ -77,8 +77,8 @@ export default function YearReview() {
     return { momentsByMonth: grouped, sortedMonths: sorted };
   })();
 
-  const handleSave = () => {
-    saveYearlyReview({
+  const handleSave = async () => {
+    await saveYearlyReview({
       year: selectedYear,
       reflectionText: reflectionText.trim(),
     });

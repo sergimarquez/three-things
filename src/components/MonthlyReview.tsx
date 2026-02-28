@@ -66,7 +66,7 @@ export default function MonthlyReview({ month, onClose, onSave }: Props) {
     return maxStreak;
   }
 
-  const toggleItemStar = (entryId: string, itemIndex: number) => {
+  const toggleItemStar = async (entryId: string, itemIndex: number) => {
     const entry = entries.find((e) => e.id === entryId);
     if (!entry) return;
 
@@ -76,7 +76,7 @@ export default function MonthlyReview({ month, onClose, onSave }: Props) {
       favorite: !updatedItems[itemIndex].favorite,
     };
 
-    updateEntry(entryId, {
+    await updateEntry(entryId, {
       date: entry.date,
       time: entry.time,
       items: updatedItems as [EntryItem, EntryItem, EntryItem],
@@ -101,8 +101,8 @@ export default function MonthlyReview({ month, onClose, onSave }: Props) {
     });
   };
 
-  const handleSave = () => {
-    saveMonthlyReflection({
+  const handleSave = async () => {
+    await saveMonthlyReflection({
       month,
       selectedFavorites,
       reflectionText: reflectionText.trim(),

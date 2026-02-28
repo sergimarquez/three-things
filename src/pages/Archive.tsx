@@ -215,7 +215,7 @@ export default function Archive() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const content = e.target?.result as string;
         const data = JSON.parse(content) as unknown;
@@ -252,20 +252,18 @@ export default function Archive() {
         }
 
         // Import the entries (validation happens inside importEntries)
-        const importedEntriesCount = importEntries(importData.entries);
+        const importedEntriesCount = await importEntries(importData.entries);
 
         // Import monthly reflections if they exist (backward compatible)
-        // Validation happens inside importMonthlyReflections
         let importedMonthlyCount = 0;
         if (importData.monthlyReflections && Array.isArray(importData.monthlyReflections)) {
-          importedMonthlyCount = importMonthlyReflections(importData.monthlyReflections);
+          importedMonthlyCount = await importMonthlyReflections(importData.monthlyReflections);
         }
 
         // Import yearly reviews if they exist (backward compatible)
-        // Validation happens inside importYearlyReviews
         let importedYearlyCount = 0;
         if (importData.yearlyReviews && Array.isArray(importData.yearlyReviews)) {
-          importedYearlyCount = importYearlyReviews(importData.yearlyReviews);
+          importedYearlyCount = await importYearlyReviews(importData.yearlyReviews);
         }
 
         // Build success message
@@ -364,7 +362,13 @@ export default function Archive() {
             </button>
 
             <button
-              onClick={addFakeData}
+              onClick={async () => {
+                try {
+                  await addFakeData();
+                } catch {
+                  // Error shown via storageError in context
+                }
+              }}
               className="inline-flex items-center gap-2 px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors"
             >
               <Plus size={16} />
@@ -386,10 +390,10 @@ export default function Archive() {
     setEditingItems([]);
   };
 
-  const saveEdit = (entryId: string, originalDate: string, originalTime: string) => {
+  const saveEdit = async (entryId: string, originalDate: string, originalTime: string) => {
     const entry = entries.find((e) => e.id === entryId);
     if (entry) {
-      updateEntry(entryId, {
+      await updateEntry(entryId, {
         date: originalDate,
         time: originalTime,
         items: editingItems as [EntryItem, EntryItem, EntryItem],
@@ -411,10 +415,10 @@ export default function Archive() {
     setEditingItems(updated);
   };
 
-  const handleDelete = (entryId: string, date: string) => {
+  const handleDelete = async (entryId: string, date: string) => {
     const displayDate = formatDisplayDate(date, "");
     if (window.confirm(`Delete this reflection from ${displayDate.replace(" at ", "")}?`)) {
-      deleteEntry(entryId);
+      await deleteEntry(entryId);
     }
   };
 

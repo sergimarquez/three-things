@@ -190,7 +190,7 @@ export default function EntryInput() {
         items: items as [EntryItem, EntryItem, EntryItem],
       };
 
-      saveEntry(entryData);
+      await saveEntry(entryData);
 
       // Dispatch custom event to notify Layout of the change
       window.dispatchEvent(new CustomEvent("entryAdded"));

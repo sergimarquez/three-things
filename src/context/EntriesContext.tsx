@@ -66,15 +66,15 @@ type EntriesContextType = {
   validationErrors: ValidationError[];
 
   // Entry operations
-  saveEntry: (entry: Omit<Entry, "id">) => void;
-  updateEntry: (id: string, updatedEntry: Omit<Entry, "id">) => void;
-  deleteEntry: (id: string) => void;
+  saveEntry: (entry: Omit<Entry, "id">) => Promise<void>;
+  updateEntry: (id: string, updatedEntry: Omit<Entry, "id">) => Promise<void>;
+  deleteEntry: (id: string) => Promise<void>;
   hasTodayEntry: () => boolean;
   hasYesterdayEntry: () => boolean;
   getTodayEntry: () => Entry | undefined;
   getYesterdayEntry: () => Entry | undefined;
-  addFakeData: () => void;
-  importEntries: (importedEntries: unknown[]) => number;
+  addFakeData: () => Promise<void>;
+  importEntries: (importedEntries: unknown[]) => Promise<number>;
 
   // Entry queries
   getYearsWithEntries: () => string[];
@@ -86,18 +86,18 @@ type EntriesContextType = {
   getYearSummary: (year: string) => ReturnType<typeof getYearSummaryUtil>;
 
   // Monthly reflection operations
-  saveMonthlyReflection: (reflection: Omit<MonthlyReflection, "id" | "createdAt">) => void;
+  saveMonthlyReflection: (reflection: Omit<MonthlyReflection, "id" | "createdAt">) => Promise<void>;
   updateMonthlyReflection: (
     id: string,
     updates: Partial<Omit<MonthlyReflection, "id" | "createdAt">>
-  ) => void;
+  ) => Promise<void>;
   getMonthlyReflection: (month: string) => MonthlyReflection | undefined;
-  importMonthlyReflections: (importedReflections: MonthlyReflection[]) => number;
+  importMonthlyReflections: (importedReflections: MonthlyReflection[]) => Promise<number>;
 
   // Yearly review operations
-  saveYearlyReview: (review: Omit<YearlyReview, "id" | "createdAt">) => void;
+  saveYearlyReview: (review: Omit<YearlyReview, "id" | "createdAt">) => Promise<void>;
   getYearlyReview: (year: string) => YearlyReview | undefined;
-  importYearlyReviews: (importedReviews: unknown[]) => number;
+  importYearlyReviews: (importedReviews: unknown[]) => Promise<number>;
 
   // Review prompts
   shouldShowMonthlyReviewPrompt: () => boolean;
@@ -128,82 +128,87 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [storageError, setStorageError] = useState<StorageError | null>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+  const [dismissedMonth, setDismissedMonth] = useState<string | null>(null);
 
   // --------------------------------------------------------------------------
-  // Load entries from localStorage on mount
+  // Load entries and dismissed state on mount
   // --------------------------------------------------------------------------
   useEffect(() => {
-    const stored = storageAdapter.get(STORAGE_KEYS.ENTRIES);
-    if (stored) {
-      try {
-        const parsedEntries = JSON.parse(stored);
-        if (!Array.isArray(parsedEntries)) {
-          throw new Error("Entries data is not an array");
-        }
+    let cancelled = false;
 
-        // Add IDs to old entries that don't have them
-        const entriesWithIds = parsedEntries.map((entry: unknown) => {
-          const e = entry as Partial<Entry>;
-          return {
-            ...e,
-            id:
-              e.id ||
-              (e.date && e.time ? `${e.date}-${e.time}` : `entry-${Date.now()}-${Math.random()}`),
-          };
-        });
+    async function load() {
+      const [stored, dismissed] = await Promise.all([
+        storageAdapter.get(STORAGE_KEYS.ENTRIES),
+        storageAdapter.get(STORAGE_KEYS.DISMISSED_MONTH),
+      ]);
+      if (cancelled) return;
+      setDismissedMonth(dismissed);
 
-        const { valid, errors } = validateEntries(entriesWithIds);
+      if (stored) {
+        try {
+          const parsedEntries = JSON.parse(stored);
+          if (!Array.isArray(parsedEntries)) {
+            throw new Error("Entries data is not an array");
+          }
 
-        // If entries were repaired, save them back
-        if (valid.length > 0 && errors.some((e) => e.message.includes("repaired automatically"))) {
-          const result = storageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(valid));
-          if (!result.success && result.error) {
-            setStorageError(result.error);
+          const entriesWithIds = parsedEntries.map((entry: unknown) => {
+            const e = entry as Partial<Entry>;
+            return {
+              ...e,
+              id:
+                e.id ||
+                (e.date && e.time ? `${e.date}-${e.time}` : `entry-${Date.now()}-${Math.random()}`),
+            };
+          });
+
+          const { valid, errors } = validateEntries(entriesWithIds);
+
+          if (valid.length > 0 && errors.some((e) => e.message.includes("repaired automatically"))) {
+            const result = await storageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(valid));
+            if (!cancelled && !result.success && result.error) setStorageError(result.error);
+          }
+
+          if (!cancelled) setEntries(valid);
+          if (!cancelled && errors.length > 0) {
+            setValidationErrors((prev) => [...prev, ...errors]);
+            if (import.meta.env.DEV) console.warn(`Found ${errors.length} invalid entries:`, errors);
+          }
+        } catch (error) {
+          if (!cancelled) {
+            console.error("Failed to parse entries:", error);
+            setStorageError({
+              type: "unknown",
+              message: "Failed to load your entries. Data may be corrupted. Please check your backup.",
+            });
           }
         }
-
-        setEntries(valid);
-
-        if (errors.length > 0) {
-          setValidationErrors((prev) => [...prev, ...errors]);
-          if (import.meta.env.DEV) {
-            console.warn(`Found ${errors.length} invalid entries:`, errors);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to parse entries from localStorage:", error);
-        setStorageError({
-          type: "unknown",
-          message: "Failed to load your entries. Data may be corrupted. Please check your backup.",
-        });
       }
+      if (!cancelled) setIsLoading(false);
     }
-    setIsLoading(false);
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [storageAdapter]);
 
   // --------------------------------------------------------------------------
   // Load monthly reflections
   // --------------------------------------------------------------------------
-  const loadMonthlyReflections = () => {
-    const stored = storageAdapter.get(STORAGE_KEYS.MONTHLY_REFLECTIONS);
+  const loadMonthlyReflections = async () => {
+    const stored = await storageAdapter.get(STORAGE_KEYS.MONTHLY_REFLECTIONS);
     if (stored) {
       try {
         const parsedReflections = JSON.parse(stored);
-        if (!Array.isArray(parsedReflections)) {
-          throw new Error("Monthly reflections data is not an array");
-        }
-
+        if (!Array.isArray(parsedReflections)) throw new Error("Monthly reflections data is not an array");
         const { valid, errors } = validateMonthlyReflections(parsedReflections);
         setMonthlyReflections(valid);
-
         if (errors.length > 0) {
           setValidationErrors((prev) => [...prev, ...errors]);
-          if (import.meta.env.DEV) {
-            console.warn(`Found ${errors.length} invalid monthly reflections:`, errors);
-          }
+          if (import.meta.env.DEV) console.warn(`Found ${errors.length} invalid monthly reflections:`, errors);
         }
       } catch (error) {
-        console.error("Failed to parse monthly reflections from localStorage:", error);
+        console.error("Failed to parse monthly reflections:", error);
       }
     } else {
       setMonthlyReflections([]);
@@ -213,26 +218,20 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   // --------------------------------------------------------------------------
   // Load yearly reviews
   // --------------------------------------------------------------------------
-  const loadYearlyReviews = () => {
-    const stored = storageAdapter.get(STORAGE_KEYS.YEARLY_REVIEWS);
+  const loadYearlyReviews = async () => {
+    const stored = await storageAdapter.get(STORAGE_KEYS.YEARLY_REVIEWS);
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        if (!Array.isArray(parsed)) {
-          throw new Error("Yearly reviews data is not an array");
-        }
-
+        if (!Array.isArray(parsed)) throw new Error("Yearly reviews data is not an array");
         const { valid, errors } = validateYearlyReviews(parsed);
         setYearlyReviews(valid);
-
         if (errors.length > 0) {
           setValidationErrors((prev) => [...prev, ...errors]);
-          if (import.meta.env.DEV) {
-            console.warn(`Found ${errors.length} invalid yearly reviews:`, errors);
-          }
+          if (import.meta.env.DEV) console.warn(`Found ${errors.length} invalid yearly reviews:`, errors);
         }
       } catch (error) {
-        console.error("Failed to parse yearly reviews from localStorage:", error);
+        console.error("Failed to parse yearly reviews:", error);
       }
     } else {
       setYearlyReviews([]);
@@ -242,68 +241,57 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadMonthlyReflections();
     loadYearlyReviews();
-
-    // Listen for custom event to reload (for cross-component communication)
     const handleReload = () => {
       loadMonthlyReflections();
       loadYearlyReviews();
     };
     window.addEventListener("reloadMonthlyReflections", handleReload);
     return () => window.removeEventListener("reloadMonthlyReflections", handleReload);
-  }, []);
+  }, [storageAdapter]);
 
   // --------------------------------------------------------------------------
   // Entry CRUD Operations
   // --------------------------------------------------------------------------
 
-  const saveEntry = (entry: Omit<Entry, "id">) => {
-    const newEntry = {
-      ...entry,
-      id: `${entry.date}-${entry.time}`,
-    };
+  const saveEntry = async (entry: Omit<Entry, "id">) => {
+    const newEntry = { ...entry, id: `${entry.date}-${entry.time}` };
     const updatedEntries = [newEntry, ...entries];
     setEntries(updatedEntries);
-
-    const result = storageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(updatedEntries));
+    const result = await storageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(updatedEntries));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setEntries(entries);
       throw new Error(result.error.message);
-    } else {
-      setStorageError(null);
     }
+    setStorageError(null);
   };
 
-  const updateEntry = (id: string, updatedEntry: Omit<Entry, "id">) => {
+  const updateEntry = async (id: string, updatedEntry: Omit<Entry, "id">) => {
     const updatedEntries = entries.map((entry) =>
       entry.id === id ? { ...updatedEntry, id } : entry
     );
     const previousEntries = entries;
     setEntries(updatedEntries);
-
-    const result = storageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(updatedEntries));
+    const result = await storageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(updatedEntries));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setEntries(previousEntries);
       throw new Error(result.error.message);
-    } else {
-      setStorageError(null);
     }
+    setStorageError(null);
   };
 
-  const deleteEntry = (id: string) => {
+  const deleteEntry = async (id: string) => {
     const updatedEntries = entries.filter((entry) => entry.id !== id);
     const previousEntries = entries;
     setEntries(updatedEntries);
-
-    const result = storageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(updatedEntries));
+    const result = await storageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(updatedEntries));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setEntries(previousEntries);
       throw new Error(result.error.message);
-    } else {
-      setStorageError(null);
     }
+    setStorageError(null);
   };
 
   // --------------------------------------------------------------------------
@@ -342,85 +330,66 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   // Fake Data & Import
   // --------------------------------------------------------------------------
 
-  const addFakeData = () => {
+  const addFakeData = async () => {
     const fakeEntries = generateFakeData();
     const combinedEntries = [...fakeEntries, ...entries];
     const previousEntries = entries;
     setEntries(combinedEntries);
-
-    const result = storageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(combinedEntries));
+    const result = await storageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(combinedEntries));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setEntries(previousEntries);
       throw new Error(result.error.message);
-    } else {
-      setStorageError(null);
     }
+    setStorageError(null);
   };
 
-  const importEntries = (importedEntries: unknown[]) => {
+  const importEntries = async (importedEntries: unknown[]): Promise<number> => {
     const { valid: validEntries, errors } = validateEntries(importedEntries);
-
     if (errors.length > 0) {
       setValidationErrors((prev) => [...prev, ...errors]);
-      if (import.meta.env.DEV) {
-        console.warn(`Found ${errors.length} invalid entries during import:`, errors);
-      }
+      if (import.meta.env.DEV) console.warn(`Found ${errors.length} invalid entries during import:`, errors);
     }
-
     const existingIds = new Set(entries.map((entry) => entry.id));
-
-    const stored = storageAdapter.get(STORAGE_KEYS.ENTRIES);
+    const stored = await storageAdapter.get(STORAGE_KEYS.ENTRIES);
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
           parsed.forEach((entry: unknown) => {
             const e = entry as Partial<Entry>;
-            if (e.id && typeof e.id === "string") {
-              existingIds.add(e.id);
-            }
+            if (e.id && typeof e.id === "string") existingIds.add(e.id);
           });
         }
       } catch {
         // Ignore parse errors
       }
     }
-
     const entriesToAdd: Entry[] = [];
     const entriesToUpdate: Entry[] = [];
-
     validEntries.forEach((entry) => {
-      if (existingIds.has(entry.id)) {
-        entriesToUpdate.push(entry);
-      } else {
-        entriesToAdd.push(entry);
-      }
+      if (existingIds.has(entry.id)) entriesToUpdate.push(entry);
+      else entriesToAdd.push(entry);
     });
-
     const entriesWithoutUpdated = entries.filter(
       (entry) => !entriesToUpdate.some((e) => e.id === entry.id)
     );
     const combinedEntries = [...entriesToUpdate, ...entriesToAdd, ...entriesWithoutUpdated].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
-
     const previousEntries = entries;
     setEntries(combinedEntries);
-
-    const result = storageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(combinedEntries));
+    const result = await storageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(combinedEntries));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setEntries(previousEntries);
       throw new Error(result.error.message);
-    } else {
-      setStorageError(null);
     }
-
+    setStorageError(null);
     return entriesToAdd.length + entriesToUpdate.length;
   };
 
-  const importMonthlyReflections = (importedReflections: MonthlyReflection[]) => {
+  const importMonthlyReflections = async (importedReflections: MonthlyReflection[]): Promise<number> => {
     const { valid: validReflections, errors } = validateMonthlyReflections(importedReflections);
 
     if (errors.length > 0) {
@@ -438,20 +407,17 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     const combinedReflections = [...monthlyReflections, ...newReflections];
     const previousReflections = monthlyReflections;
     setMonthlyReflections(combinedReflections);
-
-    const result = storageAdapter.set(STORAGE_KEYS.MONTHLY_REFLECTIONS, JSON.stringify(combinedReflections));
+    const result = await storageAdapter.set(STORAGE_KEYS.MONTHLY_REFLECTIONS, JSON.stringify(combinedReflections));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setMonthlyReflections(previousReflections);
       throw new Error(result.error.message);
-    } else {
-      setStorageError(null);
     }
-
+    setStorageError(null);
     return newReflections.length;
   };
 
-  const importYearlyReviews = (importedReviews: unknown[]) => {
+  const importYearlyReviews = async (importedReviews: unknown[]): Promise<number> => {
     const { valid: validReviews, errors } = validateYearlyReviews(importedReviews);
 
     if (errors.length > 0) {
@@ -467,16 +433,13 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     const combinedReviews = [...yearlyReviews, ...newReviews];
     const previousReviews = yearlyReviews;
     setYearlyReviews(combinedReviews);
-
-    const result = storageAdapter.set(STORAGE_KEYS.YEARLY_REVIEWS, JSON.stringify(combinedReviews));
+    const result = await storageAdapter.set(STORAGE_KEYS.YEARLY_REVIEWS, JSON.stringify(combinedReviews));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setYearlyReviews(previousReviews);
       throw new Error(result.error.message);
-    } else {
-      setStorageError(null);
     }
-
+    setStorageError(null);
     return newReviews.length;
   };
 
@@ -484,7 +447,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   // Monthly Reflection Operations
   // --------------------------------------------------------------------------
 
-  const saveMonthlyReflection = (reflection: Omit<MonthlyReflection, "id" | "createdAt">) => {
+  const saveMonthlyReflection = async (reflection: Omit<MonthlyReflection, "id" | "createdAt">) => {
     const newReflection: MonthlyReflection = {
       ...reflection,
       id: `monthly-${reflection.month}-${Date.now()}`,
@@ -507,18 +470,16 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
 
     const previousReflections = monthlyReflections;
     setMonthlyReflections(updatedReflections);
-
-    const result = storageAdapter.set(STORAGE_KEYS.MONTHLY_REFLECTIONS, JSON.stringify(updatedReflections));
+    const result = await storageAdapter.set(STORAGE_KEYS.MONTHLY_REFLECTIONS, JSON.stringify(updatedReflections));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setMonthlyReflections(previousReflections);
       throw new Error(result.error.message);
-    } else {
-      setStorageError(null);
     }
+    setStorageError(null);
   };
 
-  const updateMonthlyReflection = (
+  const updateMonthlyReflection = async (
     id: string,
     updates: Partial<Omit<MonthlyReflection, "id" | "createdAt">>
   ) => {
@@ -527,15 +488,13 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     );
     const previousReflections = monthlyReflections;
     setMonthlyReflections(updatedReflections);
-
-    const result = storageAdapter.set(STORAGE_KEYS.MONTHLY_REFLECTIONS, JSON.stringify(updatedReflections));
+    const result = await storageAdapter.set(STORAGE_KEYS.MONTHLY_REFLECTIONS, JSON.stringify(updatedReflections));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setMonthlyReflections(previousReflections);
       throw new Error(result.error.message);
-    } else {
-      setStorageError(null);
     }
+    setStorageError(null);
   };
 
   const getMonthlyReflection = (month: string) => {
@@ -546,16 +505,14 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   // Yearly Review Operations
   // --------------------------------------------------------------------------
 
-  const saveYearlyReview = (review: Omit<YearlyReview, "id" | "createdAt">) => {
+  const saveYearlyReview = async (review: Omit<YearlyReview, "id" | "createdAt">) => {
     const newReview: YearlyReview = {
       ...review,
       id: `yearly-${review.year}-${Date.now()}`,
       createdAt: new Date().toISOString(),
     };
-
     const existingIndex = yearlyReviews.findIndex((r) => r.year === review.year);
     let updatedReviews: YearlyReview[];
-
     if (existingIndex >= 0) {
       updatedReviews = [...yearlyReviews];
       updatedReviews[existingIndex] = {
@@ -566,18 +523,15 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     } else {
       updatedReviews = [...yearlyReviews, newReview];
     }
-
     const previousReviews = yearlyReviews;
     setYearlyReviews(updatedReviews);
-
-    const result = storageAdapter.set(STORAGE_KEYS.YEARLY_REVIEWS, JSON.stringify(updatedReviews));
+    const result = await storageAdapter.set(STORAGE_KEYS.YEARLY_REVIEWS, JSON.stringify(updatedReviews));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setYearlyReviews(previousReviews);
       throw new Error(result.error.message);
-    } else {
-      setStorageError(null);
     }
+    setStorageError(null);
   };
 
   const getYearlyReview = (year: string) => {
@@ -622,7 +576,6 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     }
 
     if (dayOfMonth >= 2) {
-      const dismissedMonth = storageAdapter.get(STORAGE_KEYS.DISMISSED_MONTH);
       const decemberDismissed = dismissedMonth === decemberMonth;
       return hasDecemberReview || decemberDismissed;
     }

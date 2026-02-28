@@ -10,19 +10,19 @@ export type { StorageError };
 
 /**
  * Persistence adapter: same contract for local or cloud.
- * EntriesContext uses this so we can swap implementations later.
+ * Async so Firestore (and other backends) can be used.
  */
 export type StorageAdapter = {
-  get(key: string): string | null;
-  set(key: string, value: string): { success: boolean; error?: StorageError };
-  remove(key: string): boolean;
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string): Promise<{ success: boolean; error?: StorageError }>;
+  remove(key: string): Promise<boolean>;
 };
 
 function createLocalStorageAdapter(): StorageAdapter {
   return {
-    get: (key: string) => safeGetItem(key),
-    set: (key: string, value: string) => safeSetItem(key, value),
-    remove: (key: string) => safeRemoveItem(key),
+    get: (key: string) => Promise.resolve(safeGetItem(key)),
+    set: (key: string, value: string) => Promise.resolve(safeSetItem(key, value)),
+    remove: (key: string) => Promise.resolve(safeRemoveItem(key)),
   };
 }
 

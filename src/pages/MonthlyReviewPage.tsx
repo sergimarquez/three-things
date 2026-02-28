@@ -81,7 +81,7 @@ export default function MonthlyReviewPage() {
     return maxStreak;
   }
 
-  const toggleItemStar = (entryId: string, itemIndex: number) => {
+  const toggleItemStar = async (entryId: string, itemIndex: number) => {
     const entry = monthEntries.find((e) => e.id === entryId);
     if (!entry) return;
 
@@ -91,7 +91,7 @@ export default function MonthlyReviewPage() {
       favorite: !updatedItems[itemIndex].favorite,
     };
 
-    updateEntry(entryId, {
+    await updateEntry(entryId, {
       date: entry.date,
       time: entry.time,
       items: updatedItems as [EntryItem, EntryItem, EntryItem],
@@ -124,7 +124,7 @@ export default function MonthlyReviewPage() {
     // Simulate a small delay to show saving state (save is instant, but UX feels better)
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    saveMonthlyReflection({
+    await saveMonthlyReflection({
       month,
       selectedFavorites,
       reflectionText: reflectionText.trim(),
