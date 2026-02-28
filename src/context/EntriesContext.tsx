@@ -20,7 +20,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { format, subDays } from "date-fns";
-import { safeSetItem, safeGetItem } from "../utils/storage";
+import { defaultStorageAdapter } from "../utils/storage";
 import {
   validateEntries,
   validateMonthlyReflections,
@@ -132,7 +132,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   // Load entries from localStorage on mount
   // --------------------------------------------------------------------------
   useEffect(() => {
-    const stored = safeGetItem(STORAGE_KEYS.ENTRIES);
+    const stored = defaultStorageAdapter.get(STORAGE_KEYS.ENTRIES);
     if (stored) {
       try {
         const parsedEntries = JSON.parse(stored);
@@ -155,7 +155,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
 
         // If entries were repaired, save them back
         if (valid.length > 0 && errors.some((e) => e.message.includes("repaired automatically"))) {
-          const result = safeSetItem(STORAGE_KEYS.ENTRIES, JSON.stringify(valid));
+          const result = defaultStorageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(valid));
           if (!result.success && result.error) {
             setStorageError(result.error);
           }
@@ -184,7 +184,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   // Load monthly reflections
   // --------------------------------------------------------------------------
   const loadMonthlyReflections = () => {
-    const stored = safeGetItem(STORAGE_KEYS.MONTHLY_REFLECTIONS);
+    const stored = defaultStorageAdapter.get(STORAGE_KEYS.MONTHLY_REFLECTIONS);
     if (stored) {
       try {
         const parsedReflections = JSON.parse(stored);
@@ -213,7 +213,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   // Load yearly reviews
   // --------------------------------------------------------------------------
   const loadYearlyReviews = () => {
-    const stored = safeGetItem(STORAGE_KEYS.YEARLY_REVIEWS);
+    const stored = defaultStorageAdapter.get(STORAGE_KEYS.YEARLY_REVIEWS);
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
@@ -263,7 +263,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     const updatedEntries = [newEntry, ...entries];
     setEntries(updatedEntries);
 
-    const result = safeSetItem(STORAGE_KEYS.ENTRIES, JSON.stringify(updatedEntries));
+    const result = defaultStorageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(updatedEntries));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setEntries(entries);
@@ -280,7 +280,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     const previousEntries = entries;
     setEntries(updatedEntries);
 
-    const result = safeSetItem(STORAGE_KEYS.ENTRIES, JSON.stringify(updatedEntries));
+    const result = defaultStorageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(updatedEntries));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setEntries(previousEntries);
@@ -295,7 +295,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     const previousEntries = entries;
     setEntries(updatedEntries);
 
-    const result = safeSetItem(STORAGE_KEYS.ENTRIES, JSON.stringify(updatedEntries));
+    const result = defaultStorageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(updatedEntries));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setEntries(previousEntries);
@@ -347,7 +347,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     const previousEntries = entries;
     setEntries(combinedEntries);
 
-    const result = safeSetItem(STORAGE_KEYS.ENTRIES, JSON.stringify(combinedEntries));
+    const result = defaultStorageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(combinedEntries));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setEntries(previousEntries);
@@ -369,7 +369,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
 
     const existingIds = new Set(entries.map((entry) => entry.id));
 
-    const stored = safeGetItem(STORAGE_KEYS.ENTRIES);
+    const stored = defaultStorageAdapter.get(STORAGE_KEYS.ENTRIES);
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
@@ -407,7 +407,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     const previousEntries = entries;
     setEntries(combinedEntries);
 
-    const result = safeSetItem(STORAGE_KEYS.ENTRIES, JSON.stringify(combinedEntries));
+    const result = defaultStorageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(combinedEntries));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setEntries(previousEntries);
@@ -438,7 +438,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     const previousReflections = monthlyReflections;
     setMonthlyReflections(combinedReflections);
 
-    const result = safeSetItem(STORAGE_KEYS.MONTHLY_REFLECTIONS, JSON.stringify(combinedReflections));
+    const result = defaultStorageAdapter.set(STORAGE_KEYS.MONTHLY_REFLECTIONS, JSON.stringify(combinedReflections));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setMonthlyReflections(previousReflections);
@@ -467,7 +467,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     const previousReviews = yearlyReviews;
     setYearlyReviews(combinedReviews);
 
-    const result = safeSetItem(STORAGE_KEYS.YEARLY_REVIEWS, JSON.stringify(combinedReviews));
+    const result = defaultStorageAdapter.set(STORAGE_KEYS.YEARLY_REVIEWS, JSON.stringify(combinedReviews));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setYearlyReviews(previousReviews);
@@ -507,7 +507,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     const previousReflections = monthlyReflections;
     setMonthlyReflections(updatedReflections);
 
-    const result = safeSetItem(STORAGE_KEYS.MONTHLY_REFLECTIONS, JSON.stringify(updatedReflections));
+    const result = defaultStorageAdapter.set(STORAGE_KEYS.MONTHLY_REFLECTIONS, JSON.stringify(updatedReflections));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setMonthlyReflections(previousReflections);
@@ -527,7 +527,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     const previousReflections = monthlyReflections;
     setMonthlyReflections(updatedReflections);
 
-    const result = safeSetItem(STORAGE_KEYS.MONTHLY_REFLECTIONS, JSON.stringify(updatedReflections));
+    const result = defaultStorageAdapter.set(STORAGE_KEYS.MONTHLY_REFLECTIONS, JSON.stringify(updatedReflections));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setMonthlyReflections(previousReflections);
@@ -569,7 +569,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     const previousReviews = yearlyReviews;
     setYearlyReviews(updatedReviews);
 
-    const result = safeSetItem(STORAGE_KEYS.YEARLY_REVIEWS, JSON.stringify(updatedReviews));
+    const result = defaultStorageAdapter.set(STORAGE_KEYS.YEARLY_REVIEWS, JSON.stringify(updatedReviews));
     if (!result.success && result.error) {
       setStorageError(result.error);
       setYearlyReviews(previousReviews);
@@ -621,7 +621,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     }
 
     if (dayOfMonth >= 2) {
-      const dismissedMonth = safeGetItem(STORAGE_KEYS.DISMISSED_MONTH);
+      const dismissedMonth = defaultStorageAdapter.get(STORAGE_KEYS.DISMISSED_MONTH);
       const decemberDismissed = dismissedMonth === decemberMonth;
       return hasDecemberReview || decemberDismissed;
     }

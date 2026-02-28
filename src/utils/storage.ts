@@ -1,11 +1,33 @@
 /**
  * Safe localStorage utilities with error handling
+ * and a storage adapter abstraction for future cloud support.
  */
 
 import type { StorageError } from "../types";
 
 // Re-export for backward compatibility
 export type { StorageError };
+
+/**
+ * Persistence adapter: same contract for local or cloud.
+ * EntriesContext uses this so we can swap implementations later.
+ */
+export type StorageAdapter = {
+  get(key: string): string | null;
+  set(key: string, value: string): { success: boolean; error?: StorageError };
+  remove(key: string): boolean;
+};
+
+function createLocalStorageAdapter(): StorageAdapter {
+  return {
+    get: (key: string) => safeGetItem(key),
+    set: (key: string, value: string) => safeSetItem(key, value),
+    remove: (key: string) => safeRemoveItem(key),
+  };
+}
+
+/** Default adapter (localStorage). Use this in EntriesContext; swap for cloud later. */
+export const defaultStorageAdapter = createLocalStorageAdapter();
 
 /**
  * Safely set an item in localStorage with error handling
