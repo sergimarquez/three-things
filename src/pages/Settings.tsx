@@ -1,59 +1,123 @@
 import { useState, useEffect } from "react";
 import { Cloud, Mail, Check, Loader2 } from "lucide-react";
 import { safeGetItem, safeSetItem } from "../utils/storage";
+import {
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
+  signOut,
+} from "firebase/auth";
+import { auth, isFirebaseConfigured } from "../lib/firebase";
 
 const CLOUD_ENABLED_KEY = "three-things-cloud-backup-enabled";
-const CLOUD_EMAIL_KEY = "three-things-cloud-backup-email";
+const EMAIL_FOR_LINK_KEY = "three-things-email-for-signin";
 
 function getCloudEnabled(): boolean {
   return safeGetItem(CLOUD_ENABLED_KEY) === "true";
 }
 
-function getCloudEmail(): string | null {
-  return safeGetItem(CLOUD_EMAIL_KEY);
-}
-
 export default function Settings() {
   const [cloudEnabled, setCloudEnabled] = useState(false);
-  const [cloudEmail, setCloudEmail] = useState<string | null>(null);
+  const [authEmail, setAuthEmail] = useState<string | null>(null);
   const [emailInput, setEmailInput] = useState("");
   const [sendingLink, setSendingLink] = useState(false);
   const [linkSent, setLinkSent] = useState(false);
+  const [completingLink, setCompletingLink] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
+  // Sync UI with Firebase auth when configured
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    const unsub = auth.onAuthStateChanged((user) => {
+      setAuthEmail(user?.email ?? null);
+      if (user) setLinkSent(false);
+    });
+    return unsub;
+  }, []);
+
+  // Persist cloud toggle preference
   useEffect(() => {
     setCloudEnabled(getCloudEnabled());
-    setCloudEmail(getCloudEmail());
+  }, []);
+
+  // Complete sign-in when user lands from email link
+  useEffect(() => {
+    if (!isFirebaseConfigured || !isSignInWithEmailLink(auth, window.location.href)) return;
+    const email = safeGetItem(EMAIL_FOR_LINK_KEY);
+    if (!email) {
+      setAuthError("Open the link on the same device where you requested it, or enter your email below.");
+      return;
+    }
+    setCompletingLink(true);
+    setAuthError(null);
+    signInWithEmailLink(auth, email, window.location.href)
+      .then(() => {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        safeSetItem(EMAIL_FOR_LINK_KEY, "");
+        setCloudEnabled(true);
+        safeSetItem(CLOUD_ENABLED_KEY, "true");
+        window.dispatchEvent(new Event("cloudBackupChanged"));
+      })
+      .catch((err) => {
+        setAuthError(err instanceof Error ? err.message : "Sign-in failed");
+      })
+      .finally(() => setCompletingLink(false));
   }, []);
 
   const handleCloudToggle = (on: boolean) => {
     setCloudEnabled(on);
     safeSetItem(CLOUD_ENABLED_KEY, String(on));
     window.dispatchEvent(new Event("cloudBackupChanged"));
-    if (!on) {
-      setCloudEmail(null);
-      safeSetItem(CLOUD_EMAIL_KEY, "");
+    if (!on && isFirebaseConfigured) {
+      signOut(auth).catch(() => {});
+      setAuthEmail(null);
+      setLinkSent(false);
+      setEmailInput("");
+    } else if (!on) {
+      setAuthEmail(null);
       setLinkSent(false);
       setEmailInput("");
     }
   };
 
-  const handleSendLink = () => {
-    if (!emailInput.trim()) return;
+  const handleSendLink = async () => {
+    const email = emailInput.trim();
+    if (!email || !isFirebaseConfigured) return;
     setSendingLink(true);
-    setTimeout(() => {
-      setSendingLink(false);
+    setAuthError(null);
+    try {
+      const actionCodeSettings = {
+        url: `${window.location.origin}/settings`,
+        handleCodeInApp: true,
+      };
+      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+      safeSetItem(EMAIL_FOR_LINK_KEY, email);
       setLinkSent(true);
-      setCloudEmail(emailInput.trim());
-      safeSetItem(CLOUD_EMAIL_KEY, emailInput.trim());
-    }, 1500);
+    } catch (err) {
+      setAuthError(err instanceof Error ? err.message : "Failed to send link");
+    } finally {
+      setSendingLink(false);
+    }
   };
 
-  const handleSignOut = () => {
-    setCloudEmail(null);
-    safeSetItem(CLOUD_EMAIL_KEY, "");
+  const handleSignOut = async () => {
+    if (isFirebaseConfigured) {
+      try {
+        await signOut(auth);
+      } catch {
+        // ignore
+      }
+    }
+    setAuthEmail(null);
     setLinkSent(false);
     setEmailInput("");
+    setCloudEnabled(false);
+    safeSetItem(CLOUD_ENABLED_KEY, "false");
+    window.dispatchEvent(new Event("cloudBackupChanged"));
   };
+
+  const signedIn = isFirebaseConfigured && authEmail;
+  const showComingSoon = !isFirebaseConfigured;
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -63,11 +127,13 @@ export default function Settings() {
       </div>
 
       <div className="bg-white border border-stone-200 rounded-2xl p-8">
-        <div className="flex items-center gap-2 mb-6">
-          <span className="text-xs font-medium text-stone-500 uppercase tracking-wide">
-            Coming soon
-          </span>
-        </div>
+        {showComingSoon && (
+          <div className="flex items-center gap-2 mb-6">
+            <span className="text-xs font-medium text-stone-500 uppercase tracking-wide">
+              Coming soon
+            </span>
+          </div>
+        )}
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center flex-shrink-0">
             <Cloud size={24} className="text-stone-600" />
@@ -82,30 +148,45 @@ export default function Settings() {
             {/* Toggle */}
             <div className="flex items-center justify-between gap-4 mb-6">
               <span className="text-sm text-stone-700">
-                {cloudEnabled ? "Cloud backup is on" : "Cloud backup is off"}
+                {cloudEnabled || signedIn ? "Cloud backup is on" : "Cloud backup is off"}
               </span>
               <button
                 type="button"
                 role="switch"
-                aria-checked={cloudEnabled}
-                onClick={() => handleCloudToggle(!cloudEnabled)}
+                aria-checked={Boolean(cloudEnabled || signedIn)}
+                onClick={() => handleCloudToggle(!(cloudEnabled || signedIn))}
+                disabled={showComingSoon}
                 className={`
                   relative inline-flex h-7 w-12 flex-shrink-0 rounded-full transition-colors
                   focus:outline-none focus:ring-2 focus:ring-stone-400 focus:ring-offset-2
-                  ${cloudEnabled ? "bg-stone-900" : "bg-stone-200"}
+                  disabled:opacity-60 disabled:cursor-not-allowed
+                  ${cloudEnabled || signedIn ? "bg-stone-900" : "bg-stone-200"}
                 `}
               >
                 <span
                   className={`
                     pointer-events-none absolute top-1 left-1 h-5 w-5 rounded-full bg-white shadow
                     transition-transform duration-200
-                    ${cloudEnabled ? "translate-x-5" : "translate-x-0"}
+                    ${cloudEnabled || signedIn ? "translate-x-5" : "translate-x-0"}
                   `}
                 />
               </button>
             </div>
 
-            {cloudEnabled && !cloudEmail && (
+            {completingLink && (
+              <p className="text-sm text-stone-600 mb-4 flex items-center gap-2">
+                <Loader2 size={18} className="animate-spin" />
+                Completing sign-in…
+              </p>
+            )}
+
+            {authError && (
+              <p className="text-sm text-red-600 mb-4" role="alert">
+                {authError}
+              </p>
+            )}
+
+            {(cloudEnabled || signedIn) && !signedIn && !showComingSoon && (
               <div className="border border-stone-200 rounded-xl p-5 bg-stone-50">
                 <p className="text-sm text-stone-700 mb-4">
                   Sign in with your email. We’ll send you a link — no password needed.
@@ -131,7 +212,7 @@ export default function Settings() {
                   </div>
                   <button
                     type="button"
-                    onClick={handleSendLink}
+                    onClick={() => handleSendLink()}
                     disabled={!emailInput.trim() || sendingLink}
                     className="inline-flex items-center justify-center gap-2 px-4 py-2.5
                       rounded-lg font-medium bg-stone-900 text-white hover:bg-stone-800
@@ -161,19 +242,19 @@ export default function Settings() {
               </div>
             )}
 
-            {cloudEnabled && cloudEmail && (
+            {(cloudEnabled || signedIn) && signedIn && (
               <div className="border border-stone-200 rounded-xl p-5 bg-stone-50 flex flex-wrap
                 items-center justify-between gap-4"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-stone-200 flex items-center justify-center">
                     <span className="text-sm font-medium text-stone-700">
-                      {cloudEmail.slice(0, 2).toUpperCase()}
+                      {(authEmail ?? "").slice(0, 2).toUpperCase()}
                     </span>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-stone-900">Signed in</p>
-                    <p className="text-sm text-stone-600">{cloudEmail}</p>
+                    <p className="text-sm text-stone-600">{authEmail}</p>
                   </div>
                 </div>
                 <button

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { Circle, BookOpen, Settings, TrendingUp, Download, Info } from "lucide-react";
+import { Circle, BookOpen, Settings, TrendingUp, Download, Info, Cloud } from "lucide-react";
 import { DATA_VERSION, useEntries } from "../hooks/useEntries";
 import ValidationNotice from "../components/ValidationNotice";
 
@@ -22,6 +22,7 @@ export default function Layout() {
   const menuItems = [
     { name: "Progress", path: "/streak", icon: TrendingUp },
     { name: "Export", path: "/export", icon: Download },
+    { name: "Backup", path: "/settings", icon: Cloud },
     { name: "About", path: "/instructions", icon: Info },
   ];
 

@@ -18,3 +18,6 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+/** True when Firebase env is set so auth/cloud can be used. */
+export const isFirebaseConfigured = Boolean(import.meta.env.VITE_FIREBASE_PROJECT_ID);
