@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Circle, BookOpen, Settings, TrendingUp, Download, Info, Cloud } from "lucide-react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth, isFirebaseConfigured } from "../lib/firebase";
 import { DATA_VERSION, useEntries } from "../hooks/useEntries";
 import ValidationNotice from "../components/ValidationNotice";
 
@@ -10,9 +12,16 @@ export default function Layout() {
   const location = useLocation();
   const [forceUpdate, setForceUpdate] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [backupActive, setBackupActive] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuLeaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { validationErrors, clearValidationErrors } = useEntries();
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    const unsub = onAuthStateChanged(auth, (user) => setBackupActive(!!user));
+    return unsub;
+  }, []);
 
   const mainNavItems = [
     { name: "Reflect", path: "/", icon: Circle },
@@ -117,6 +126,7 @@ export default function Layout() {
                     {menuItems.map((item) => {
                       const Icon = item.icon;
                       const isActive = location.pathname === item.path;
+                      const isBackupItem = item.path === "/settings";
                       return (
                         <Link
                           key={item.path}
@@ -130,6 +140,13 @@ export default function Layout() {
                         >
                           <Icon size={16} className="text-stone-500" />
                           {item.name}
+                          {isBackupItem && backupActive && (
+                            <span
+                              className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"
+                              title="Cloud backup active"
+                              aria-label="Cloud backup active"
+                            />
+                          )}
                         </Link>
                       );
                     })}

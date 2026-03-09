@@ -243,18 +243,19 @@ export default function Settings() {
             )}
 
             {(cloudEnabled || signedIn) && signedIn && (
-              <div className="border border-stone-200 rounded-xl p-5 bg-stone-50 flex flex-wrap
+              <div className="border border-emerald-200 rounded-xl p-5 bg-emerald-50/70 flex flex-wrap
                 items-center justify-between gap-4"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-stone-200 flex items-center justify-center">
-                    <span className="text-sm font-medium text-stone-700">
+                  <div className="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center text-white">
+                    <span className="text-sm font-medium">
                       {(authEmail ?? "").slice(0, 2).toUpperCase()}
                     </span>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-stone-900">Signed in</p>
                     <p className="text-sm text-stone-600">{authEmail}</p>
+                    <p className="text-xs text-emerald-700 mt-0.5">Your journal is backed up to the cloud</p>
                   </div>
                 </div>
                 <button
