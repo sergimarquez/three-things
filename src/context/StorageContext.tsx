@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from "react";
-import { defaultStorageAdapter, type StorageAdapter } from "../utils/storage";
+import { defaultStorageAdapter, createDualWriteAdapter, type StorageAdapter } from "../utils/storage";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { auth, db, isFirebaseConfigured } from "../lib/firebase";
 import { createFirebaseAdapter } from "../lib/firebaseAdapter";
@@ -34,10 +34,11 @@ export function AuthAwareStorageProvider({ children }: { children: ReactNode }) 
     return unsub;
   }, []);
 
-  const adapter = useMemo(
-    () => (user ? createFirebaseAdapter(db, user.uid) : defaultStorageAdapter),
-    [user?.uid]
-  );
+  const adapter = useMemo(() => {
+    if (!user) return defaultStorageAdapter;
+    const cloud = createFirebaseAdapter(db, user.uid);
+    return createDualWriteAdapter(cloud, defaultStorageAdapter);
+  }, [user?.uid]);
 
   return <StorageProvider adapter={adapter}>{children}</StorageProvider>;
 }

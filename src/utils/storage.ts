@@ -30,6 +30,33 @@ function createLocalStorageAdapter(): StorageAdapter {
 export const defaultStorageAdapter = createLocalStorageAdapter();
 
 /**
+ * Wraps a primary adapter and also writes to a secondary (e.g. cloud + local).
+ * Read/remove use primary only; set() writes to both so secondary stays in sync as backup.
+ */
+export function createDualWriteAdapter(
+  primary: StorageAdapter,
+  secondary: StorageAdapter
+): StorageAdapter {
+  return {
+    get: async (key) => {
+      const value = await primary.get(key);
+      if (value !== null) secondary.set(key, value).catch(() => {});
+      return value;
+    },
+    set: async (key, value) => {
+      const result = await primary.set(key, value);
+      await secondary.set(key, value);
+      return result;
+    },
+    remove: async (key) => {
+      const ok = await primary.remove(key);
+      await secondary.remove(key);
+      return ok;
+    },
+  };
+}
+
+/**
  * Safely set an item in localStorage with error handling
  * @returns true if successful, false if failed
  */
