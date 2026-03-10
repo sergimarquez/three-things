@@ -26,10 +26,10 @@ A thoughtful daily gratitude practice app. Simple, focused, and privacy-first.
 
 ### Data Control
 
-- **Export Options** - Download your data in JSON (v1.1.0), CSV, Text, or Markdown
+- **Export Options** - Download your data in JSON (v1.2.0), CSV, Text, or Markdown
 - **Year Review Export** - Export your annual review as PDF or Markdown
 - **Import Backups** - Restore from previous exports with version compatibility checks
-- **Privacy First** - All data stays on your device (localStorage)
+- **Privacy First** - By default, data stays on your device (localStorage), with an optional cloud backup using your own Firebase project
 
 ## Tech Stack
 
@@ -66,7 +66,7 @@ src/
 ### Technical Decisions
 
 - **No External State Library** - Custom hooks provide sufficient abstraction without Redux/Zustand overhead
-- **localStorage over IndexedDB** - Simpler API for small-scale personal data
+- **localStorage over IndexedDB** - Simpler API for small-scale personal data; optional Firestore backup when enabled
 - **TypeScript Strict Mode** - Full type safety with `noUnusedLocals` and `noImplicitAny`
 - **SPA Routing** - Netlify redirects configured for client-side routing with dedicated pages for reviews
 - **React Compiler** - Automatic memoization of components and expensive calculations, eliminating manual `useMemo`/`useCallback` overhead
@@ -108,6 +108,33 @@ The app is configured for Netlify with:
 - TypeScript compilation in build process
 - Optimized Vite production build
 
+### Cloud backup setup
+
+Cloud backup is optional and uses your own Firebase project. To enable it:
+
+1. **Firebase project & env vars**
+   - Create a Firebase project.
+   - In the Firebase Console, create a Web app and copy the config.
+   - Create `.env` from `.env.example` and fill in `VITE_FIREBASE_*` values.
+2. **Auth configuration**
+   - In Firebase Console → **Authentication** → **Sign-in method**, enable **Email/Password** and **Email link (passwordless sign-in)**.
+   - In **Authentication** → **Settings** → **Authorized domains**, add `localhost` and your production domain.
+3. **Firestore rules**
+   - Install Firebase CLI: `npm install -g firebase-tools`.
+   - Log in and select your project:
+     ```bash
+     firebase login
+     firebase use --add
+     ```
+   - Deploy rules:
+     ```bash
+     firebase deploy --only firestore
+     ```
+4. **Using backup**
+   - In the app, open **Backup** from the settings menu.
+   - Toggle **Cloud backup** on, enter your email, and click **Send link**.
+   - Click the sign-in link from your email in the same browser. Once signed in, your journal is backed up to Firestore and also mirrored to localStorage.
+
 ## Development Practices
 
 - **ESLint** - Code quality and consistency
@@ -135,12 +162,18 @@ Tests are located alongside source files (`*.test.ts`) and cover:
 - Pure utility functions (streak calculations, date filtering, etc.)
 - Data validation logic
 
+### Cloud backup (optional)
+
+- **Optional** - Local storage remains the default; cloud backup is opt-in.
+- **Per-user** - When enabled, your data is stored in your own Firebase project under your account.
+- **Dual storage** - While signed in, data is saved to both Firestore and localStorage so signing out keeps your latest journal available offline.
+
 ## Versioning
 
 3Good uses semantic versioning (SemVer) for data exports and compatibility:
 
-- **Current Version**: v1.1.0
-- **Version Format**: `MAJOR.MINOR.PATCH` (e.g., `1.1.0`)
+- **Current Version**: v1.2.0
+- **Version Format**: `MAJOR.MINOR.PATCH` (e.g., `1.2.0`)
 
 ### Version Strategy
 
@@ -156,7 +189,7 @@ All JSON exports include a `version` field for compatibility tracking. The app v
 
 When adding features or making changes:
 
-1. **Update `DATA_VERSION`** in `src/hooks/useEntries.ts`
+1. **Update `DATA_VERSION`** in `src/types/index.ts`
 2. **Update README** if features change significantly
 3. **Test import/export** with previous version backups
 4. **Add migration logic** if breaking changes are needed (major version bump)

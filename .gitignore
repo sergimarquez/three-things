@@ -30,6 +30,9 @@ build/
 .env.test.local
 .env.production.local
 
+# Firebase CLI local config
+.firebaserc
+
 # Logs
 logs
 *.log

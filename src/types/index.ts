@@ -54,4 +54,4 @@ export const STORAGE_KEYS = {
   DISMISSED_YEAR: "three-things-dismissed-year",
 } as const;
 
-export const DATA_VERSION = "1.1.0";
+export const DATA_VERSION = "1.2.0";
