@@ -27,7 +27,7 @@ export default function Settings() {
 
   // Sync UI with Firebase auth when configured
   useEffect(() => {
-    if (!isFirebaseConfigured) return;
+    if (!isFirebaseConfigured || !auth) return;
     const unsub = auth.onAuthStateChanged((user) => {
       setAuthEmail(user?.email ?? null);
       if (user) setLinkSent(false);
@@ -42,7 +42,7 @@ export default function Settings() {
 
   // Complete sign-in when user lands from email link
   useEffect(() => {
-    if (!isFirebaseConfigured || !isSignInWithEmailLink(auth, window.location.href)) return;
+    if (!isFirebaseConfigured || !auth || !isSignInWithEmailLink(auth, window.location.href)) return;
     const email = safeGetItem(EMAIL_FOR_LINK_KEY);
     if (!email) {
       setAuthError("Open the link on the same device where you requested it, or enter your email below.");
@@ -68,7 +68,7 @@ export default function Settings() {
     setCloudEnabled(on);
     safeSetItem(CLOUD_ENABLED_KEY, String(on));
     window.dispatchEvent(new Event("cloudBackupChanged"));
-    if (!on && isFirebaseConfigured) {
+    if (!on && isFirebaseConfigured && auth) {
       signOut(auth).catch(() => {});
       setAuthEmail(null);
       setLinkSent(false);
@@ -82,7 +82,7 @@ export default function Settings() {
 
   const handleSendLink = async () => {
     const email = emailInput.trim();
-    if (!email || !isFirebaseConfigured) return;
+    if (!email || !isFirebaseConfigured || !auth) return;
     setSendingLink(true);
     setAuthError(null);
     try {
@@ -101,7 +101,7 @@ export default function Settings() {
   };
 
   const handleSignOut = async () => {
-    if (isFirebaseConfigured) {
+    if (isFirebaseConfigured && auth) {
       try {
         await signOut(auth);
       } catch {

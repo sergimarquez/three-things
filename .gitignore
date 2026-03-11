@@ -33,6 +33,9 @@ build/
 # Firebase CLI local config
 .firebaserc
 
+# Netlify env import (contains secrets)
+netlify-env.txt
+
 # Logs
 logs
 *.log

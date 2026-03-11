@@ -18,7 +18,7 @@ export default function Layout() {
   const { validationErrors, clearValidationErrors } = useEntries();
 
   useEffect(() => {
-    if (!isFirebaseConfigured) return;
+    if (!isFirebaseConfigured || !auth) return;
     const unsub = onAuthStateChanged(auth, (user) => setBackupActive(!!user));
     return unsub;
   }, []);

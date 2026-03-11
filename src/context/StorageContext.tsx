@@ -29,13 +29,13 @@ export function AuthAwareStorageProvider({ children }: { children: ReactNode }) 
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    if (!isFirebaseConfigured) return;
+    if (!isFirebaseConfigured || !auth) return;
     const unsub = onAuthStateChanged(auth, setUser);
     return unsub;
   }, []);
 
   const adapter = useMemo(() => {
-    if (!user) return defaultStorageAdapter;
+    if (!user || !db) return defaultStorageAdapter;
     const cloud = createFirebaseAdapter(db, user.uid);
     return createDualWriteAdapter(cloud, defaultStorageAdapter);
   }, [user?.uid]);
