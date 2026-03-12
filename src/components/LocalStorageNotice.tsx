@@ -33,7 +33,16 @@ export default function LocalStorageNotice({ entriesCount }: { entriesCount: num
       <div className="flex items-center justify-between bg-white border border-yellow-200 rounded-lg shadow-sm px-4 py-3 text-sm text-yellow-900">
         <span>
           <strong className="font-semibold text-yellow-700">Just a heads up:</strong>{" "}
-          Your journal is saved only on this device. <br /> To keep your entries safe, <Link to="/export" className="font-semibold text-yellow-700 underline">export a backup</Link> before clearing your browser data or switching devices.
+          By default, your journal is saved on this device. <br />
+          To keep your entries safe,{" "}
+          <Link to="/export" className="font-semibold text-yellow-700 underline">
+            export a backup
+          </Link>{" "}
+          (or enable{" "}
+          <Link to="/settings" className="font-semibold text-yellow-700 underline">
+            cloud backup
+          </Link>
+          ) before clearing your browser data or switching devices.
         </span>
         <button
           className="ml-4 px-2 py-1 rounded text-yellow-700 hover:bg-yellow-50 transition"

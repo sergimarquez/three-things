@@ -236,7 +236,7 @@ export default function Settings() {
                 </div>
                 {linkSent && (
                   <p className="text-sm text-stone-500 mt-3">
-                    Check your inbox and click the link to finish signing in.
+                    Check your inbox (and spam) and click the link to finish signing in.
                   </p>
                 )}
               </div>
