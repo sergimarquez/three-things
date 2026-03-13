@@ -134,8 +134,8 @@ export default function Settings() {
             </span>
           </div>
         )}
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center flex-shrink-0">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center flex-shrink-0 mx-auto sm:mx-0">
             <Cloud size={24} className="text-stone-600" />
           </div>
           <div className="flex-1 min-w-0">

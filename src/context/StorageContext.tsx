@@ -130,6 +130,9 @@ export function AuthAwareStorageProvider({ children }: { children: ReactNode }) 
       if (!cloudDismissedYear && localDismissedYear) {
         await cloud.set(STORAGE_KEYS.DISMISSED_YEAR, localDismissedYear);
       }
+
+      // Notify the app to refresh in-memory state from storage (cloud/local).
+      window.dispatchEvent(new Event("storageDataChanged"));
     }
 
     migrateLocalToCloudOnce().catch((e) => {

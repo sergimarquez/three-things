@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * EntriesContext - Centralized state management for entries, reflections, and reviews
  *
@@ -18,7 +19,7 @@
  * 2. Use useEntries() hook in any component (same API as before)
  */
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { format, subDays } from "date-fns";
 import { useStorage } from "./StorageContext";
 import {
@@ -130,6 +131,50 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [dismissedMonth, setDismissedMonth] = useState<string | null>(null);
 
+  const loadEntriesAndDismissed = useCallback(async () => {
+    const [stored, dismissed] = await Promise.all([
+      storageAdapter.get(STORAGE_KEYS.ENTRIES),
+      storageAdapter.get(STORAGE_KEYS.DISMISSED_MONTH),
+    ]);
+    setDismissedMonth(dismissed);
+
+    if (stored) {
+      try {
+        const parsedEntries = JSON.parse(stored);
+        if (!Array.isArray(parsedEntries)) {
+          throw new Error("Entries data is not an array");
+        }
+
+        const entriesWithIds = parsedEntries.map((entry: unknown) => {
+          const e = entry as Partial<Entry>;
+          return {
+            ...e,
+            id: e.id || (e.date && e.time ? `${e.date}-${e.time}` : `entry-${Date.now()}-${Math.random()}`),
+          };
+        });
+
+        const { valid, errors } = validateEntries(entriesWithIds);
+
+        if (valid.length > 0 && errors.some((e) => e.message.includes("repaired automatically"))) {
+          const result = await storageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(valid));
+          if (!result.success && result.error) setStorageError(result.error);
+        }
+
+        setEntries(valid);
+        if (errors.length > 0) {
+          setValidationErrors((prev) => [...prev, ...errors]);
+          if (import.meta.env.DEV) console.warn(`Found ${errors.length} invalid entries:`, errors);
+        }
+      } catch (error) {
+        console.error("Failed to parse entries:", error);
+        setStorageError({
+          type: "unknown",
+          message: "Failed to load your entries. Data may be corrupted. Please check your backup.",
+        });
+      }
+    }
+  }, [storageAdapter]);
+
   // --------------------------------------------------------------------------
   // Load entries and dismissed state on mount
   // --------------------------------------------------------------------------
@@ -137,52 +182,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     async function load() {
-      const [stored, dismissed] = await Promise.all([
-        storageAdapter.get(STORAGE_KEYS.ENTRIES),
-        storageAdapter.get(STORAGE_KEYS.DISMISSED_MONTH),
-      ]);
-      if (cancelled) return;
-      setDismissedMonth(dismissed);
-
-      if (stored) {
-        try {
-          const parsedEntries = JSON.parse(stored);
-          if (!Array.isArray(parsedEntries)) {
-            throw new Error("Entries data is not an array");
-          }
-
-          const entriesWithIds = parsedEntries.map((entry: unknown) => {
-            const e = entry as Partial<Entry>;
-            return {
-              ...e,
-              id:
-                e.id ||
-                (e.date && e.time ? `${e.date}-${e.time}` : `entry-${Date.now()}-${Math.random()}`),
-            };
-          });
-
-          const { valid, errors } = validateEntries(entriesWithIds);
-
-          if (valid.length > 0 && errors.some((e) => e.message.includes("repaired automatically"))) {
-            const result = await storageAdapter.set(STORAGE_KEYS.ENTRIES, JSON.stringify(valid));
-            if (!cancelled && !result.success && result.error) setStorageError(result.error);
-          }
-
-          if (!cancelled) setEntries(valid);
-          if (!cancelled && errors.length > 0) {
-            setValidationErrors((prev) => [...prev, ...errors]);
-            if (import.meta.env.DEV) console.warn(`Found ${errors.length} invalid entries:`, errors);
-          }
-        } catch (error) {
-          if (!cancelled) {
-            console.error("Failed to parse entries:", error);
-            setStorageError({
-              type: "unknown",
-              message: "Failed to load your entries. Data may be corrupted. Please check your backup.",
-            });
-          }
-        }
-      }
+      await loadEntriesAndDismissed();
       if (!cancelled) setIsLoading(false);
     }
 
@@ -190,12 +190,12 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [storageAdapter]);
+  }, [loadEntriesAndDismissed]);
 
   // --------------------------------------------------------------------------
   // Load monthly reflections
   // --------------------------------------------------------------------------
-  const loadMonthlyReflections = async () => {
+  const loadMonthlyReflections = useCallback(async () => {
     const stored = await storageAdapter.get(STORAGE_KEYS.MONTHLY_REFLECTIONS);
     if (stored) {
       try {
@@ -213,12 +213,12 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     } else {
       setMonthlyReflections([]);
     }
-  };
+  }, [storageAdapter]);
 
   // --------------------------------------------------------------------------
   // Load yearly reviews
   // --------------------------------------------------------------------------
-  const loadYearlyReviews = async () => {
+  const loadYearlyReviews = useCallback(async () => {
     const stored = await storageAdapter.get(STORAGE_KEYS.YEARLY_REVIEWS);
     if (stored) {
       try {
@@ -236,7 +236,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     } else {
       setYearlyReviews([]);
     }
-  };
+  }, [storageAdapter]);
 
   useEffect(() => {
     loadMonthlyReflections();
@@ -246,8 +246,17 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
       loadYearlyReviews();
     };
     window.addEventListener("reloadMonthlyReflections", handleReload);
-    return () => window.removeEventListener("reloadMonthlyReflections", handleReload);
-  }, [storageAdapter]);
+    const handleStorageDataChanged = () => {
+      loadEntriesAndDismissed();
+      loadMonthlyReflections();
+      loadYearlyReviews();
+    };
+    window.addEventListener("storageDataChanged", handleStorageDataChanged);
+    return () => {
+      window.removeEventListener("reloadMonthlyReflections", handleReload);
+      window.removeEventListener("storageDataChanged", handleStorageDataChanged);
+    };
+  }, [storageAdapter, loadEntriesAndDismissed, loadMonthlyReflections, loadYearlyReviews]);
 
   // --------------------------------------------------------------------------
   // Entry CRUD Operations
